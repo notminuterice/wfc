@@ -1,14 +1,49 @@
 import express from "express"
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import multer from "multer"
+import cors from "cors"
+import { dirname } from 'path'
+import { fileURLToPath } from 'url'
+import wfc from "./wfc.mjs"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const app = express()
-const port = 3000;
+const port = 8000;
 
-
+app.use(cors({origin: ["http://localhost:3000"]}))
 app.use('/images', express.static(`${__dirname}/output`))
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, `${__dirname}/input`)
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname)
+  }
+})
+
+const upload = multer({storage: storage})
+
+app.post("/upload", upload.single("image"), async (req, res) => {
+  const data = req.body
+  try {
+    if (!req.file) {
+      return res.status(400).send("No file uploaded");
+    }
+
+    console.log("File uploaded successfully");
+    console.log(req.file.filename);
+    await wfc(req.file.filename, data.outPath);
+
+    res.status(200).json({
+      message: "Image generation complete",
+      imgUrl: `http://localhost:8000/images/${data.outPath}.png`
+    })
+  } catch (err) {
+    console.error("File upload error:", err);
+    res.status(500).send("An error occurred during the upload");
+  }
+})
 
 app.listen(port, () => {
   console.log(`test on http://localhost:${port}/`)

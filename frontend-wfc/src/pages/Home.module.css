@@ -1,0 +1,59 @@
+body{
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.main{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+
+}
+
+.title{
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.titleText{
+  font-size: 48px;
+  font-weight: bold;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.output{
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+.input{
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+.contentWrapper{
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 50px;
+}
+
+
+.imgWrapper{
+  height: 400px;
+  width: 400px;
+  overflow: hidden;
+  border: 1px solid black;
+}
