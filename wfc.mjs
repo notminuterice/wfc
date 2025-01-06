@@ -1,4 +1,6 @@
-import getPixels from "get-pixels" 
+import getPixels from "get-pixels"
+import { createCanvas } from "canvas"
+import fs from "fs"
 
 let img_src = "./grass2.png" //image source
 let imgSize = {
@@ -11,7 +13,7 @@ let tileSize = 8 //size of each tile (e.g. 3x3)
 const pixelSize = 2
 let mainGrid //holds the grid object
 let canvasSize = {
-  x:1000, 
+  x:1000,
   y:1000
 } //size of output canvas in px
 let gridSize = 20
@@ -35,7 +37,7 @@ class MinHeap{
 
   //returns the index of parent index of the node inputted
   getParentIndex(i) {
-    return Math.floor((i - 1) / 2) 
+    return Math.floor((i - 1) / 2)
   }
 
   //returns the index of left child of the parent inputted
@@ -73,7 +75,7 @@ class MinHeap{
               smallest = rightChildIndex
           }
           if (smallest === i) break
-          
+
           [i, smallest] = [smallest, i]
       }
   }
@@ -103,7 +105,7 @@ class MinHeap{
       this.arr.pop()
     }
 
-    
+
     let min = this.arr[0] //grabs root node from heap
     this.arr[0] = this.arr.at(-1) //sets the root to the last node
     this.arr.pop() //removes the last node
@@ -118,16 +120,16 @@ class Tile{
     this.grid = grid //pixel matrix
     this.k = k //tile key
     this.frequencyHint = 1
-    
+
     this.adjacencyRules = {
       "up": [], //up
       "down": [],//down
       "left": [], //right
       "right": [] //left
     }
-    
+
   }
-  
+
   generateAdjacencyRules(otherTiles, position){
     let i = position - 1
     let w = imgSize.h/tileSize
@@ -155,7 +157,7 @@ class Tile{
     } else {
       this.adjacencyRules.down.push(otherTiles[i - ((imgSize.w/tileSize - 1) * (imgSize.w/tileSize))].k.toString())
     }
-    
+
   }
 }
 
@@ -170,20 +172,20 @@ class Cell{
     this.setNeighbours()
     this.entropy = -1
   }
-  
-  setNeighbours(){ 
+
+  setNeighbours(){
     if(this.y > 0) this.neighbours.push("up") //x and y coords of neighbour above cell
     if (this.y < this.gridSize-1) this.neighbours.push("down") //x and y coords of neighbour below cell
     if (this.x > 0) this.neighbours.push("left") //x and y coords of neighbour left of cell
     if (this.x < this.gridSize-1) this.neighbours.push("right") //x and y coords of neighbour right of cell
   }
-  
+
   collapse(){
     if (this.possibleTiles.length == 0){
       console.log("OUT OF POSSIBILITIES")
       return
     }
-      
+
     let weightedTiles = []
     for (const tile of this.possibleTiles){
       let addValue = (new Array(tileSet[tile].frequencyHint)).fill(tile)
@@ -193,8 +195,8 @@ class Cell{
     this.possibleTiles = []
     this.entropy = -1
   }
-}  
-  
+}
+
 class Grid{
   constructor(gridSize, tiles){
     //this.gridMatrix = (new Array(gridSize)).fill((new Array(gridSize).fill("")));
@@ -207,7 +209,7 @@ class Grid{
     this.iterationCount = 0
     this.collapsedCells = []
   }
-  
+
   initialiseGrid(){
     for (let y = 0; y < this.gridSize; y++){
       let row = []
@@ -217,7 +219,7 @@ class Grid{
       this.gridMatrix.push(row)
     }
   }
-  
+
   getDirectionTile(direction){
     switch (direction){
       case "up": return [0, -1];
@@ -226,18 +228,18 @@ class Grid{
       case "right": return [1, 0]
     }
   }
-  
+
   beginCollapse(){
     this.collapse(0, 0)
   }
-  
+
   collapse(x, y){
     this.gridMatrix[y][x].collapse()
     this.propagate(x, y)
     this.chooseNextCell()
 
   }
-  
+
   chooseNextCell(){
     this.iterationCount++
     if (this.collapsedCells.length >= this.gridSize**2){
@@ -258,21 +260,21 @@ class Grid{
     if (lowestCell == null) return
     this.collapse(lowestCell.x, lowestCell.y)
   }
-  
+
   addToHeap(cell){
     this.priorityQueue.insert(cell)
   }
-  
+
   propagate(x, y){
     if (this.gridMatrix[y][x].chosenTile != null){
       this.gridMatrix[y][x].neighbours.forEach(n => {
-        
+
         let dir = this.getDirectionTile(n)
         if (this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile != null) return
-        
+
         let prevTileValues = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles
         let thisPossibleTiles = tileSet[this.gridMatrix[y][x].chosenTile.toString()].adjacencyRules[n]
-        
+
         this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.filter(t => thisPossibleTiles.includes(t))
         this.gridMatrix[y + dir[1]][x + dir[0]].entropy = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length
 
@@ -305,13 +307,22 @@ class Grid{
 //converts the input rgb val in an array to hex value
 function rgbToHex(pixelVals){
   let outputStr = "#"
- 
+
   for (const pixel of pixelVals){
     let hexVal = pixel.toString(16) //converts value using base 16
     outputStr += hexVal.length > 1 ? hexVal : "0" + hexVal //adds to the output - if only one digit adds a 0 before it
   }
-  
+
   return outputStr
+}
+
+function hexToRGB(h) {
+  h = h.split("")
+  h.shift()
+  let r = parseInt(h.slice(0, 2).join(""), 16)
+  let g = parseInt(h.slice(2, 4).join(""), 16)
+  let b = parseInt(h.slice(4, 6).join(""), 16)
+  return([r, g, b, 255])
 }
 
 //converts the pixel output from the get() function into coordinates
@@ -332,7 +343,7 @@ function getPixelsT(startX, startY, size, pixelArr){
       pixelVals.push(...pixelArr.slice(pixelPosition, pixelPosition+4)) //pushes the RGBA value to the array
     }
   }
-  
+
   return pixelVals
 }
 
@@ -345,19 +356,19 @@ async function getPixelValues(path){
         return
       }
       let pixelVals = Array.from(pixels.data)
-      
+
       for(let x = 0; x < imgSize.w; x+=tileSize){
         for(let y = 0; y < imgSize.h; y+=tileSize){
           let tileKey = (Object.keys(tileSet).length+1).toString()
           tileSet[tileKey] = new Tile(pixelsToMatrix(getPixelsT(y, x, tileSize, pixelVals)), tileKey)
           //image(c, x*5+10, y*5+10) //displays the tile
-  
+
         }
       }
       for (let i = 1; i <= Object.keys(tileSet).length; i++){
         tileSet[i].generateAdjacencyRules(Object.values(tileSet), i)
       }
-      
+
       let flattenedTileset = {}
       let newMapping = {}
       for (const tile of Object.values(tileSet)){
@@ -376,10 +387,10 @@ async function getPixelValues(path){
         if (!dupeFound){
           let newTile = JSON.parse(JSON.stringify(tile))
           newTile.k = Object.values(flattenedTileset).length+1
-          flattenedTileset[newTile.k.toString()] = newTile  
+          flattenedTileset[newTile.k.toString()] = newTile
           newMapping[tile.k.toString()] = newTile.k.toString()
         }
-      
+
       }
       for (let [t, tile] of Object.entries(flattenedTileset)){
         for (let [d, dir] of Object.entries(tile.adjacencyRules)){
@@ -394,25 +405,50 @@ async function getPixelValues(path){
   })
 }
 
+function arrToImg(imgData) {
+  const pixelSize = 1
+  const canvas = createCanvas(imgData[0].length * pixelSize, imgData.length * pixelSize)
+  const ctx = canvas.getContext("2d")
+
+  imgData.forEach((row, y) => {
+    row.forEach((colour, x) => {
+      ctx.fillStyle = colour
+      ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize)
+    })
+  })
+
+  const out = fs.createWriteStream("./test.png");
+  const stream = canvas.createPNGStream()
+  stream.pipe(out)
+}
+
 function gridToArray(g){
   let default2dArray = []
   g.forEach((row, y) => {
+    for (let i = 0; i < tileSize; i++) {
+      default2dArray.push([])
+    }
     let tileRow = []
     row.forEach((cell, x) => {
       let rowTile = tileSet[cell.chosenTile]
       if (x == 0){
-        for (const i = 0; i < rowTile.grid.length; i++){
+        for (let i = 0; i < rowTile.grid.length; i++){
           tileRow.push([])
         }
       }
 
-      rowTile.forEach((tileRow, tileY) => {
+      rowTile.grid.forEach((tileRow, tileY) => {
         tileRow.forEach((colour, tileX) => {
-          tileRow[y * rowTile.grid.length + tileY].push(colour)
+          default2dArray[y * rowTile.grid.length + tileY].push(colour)
         })
       })
     })
   })
+
+  // const flattenedHexArray = default2dArray.flat()
+  // const flattenedRGBArray = flattenedHexArray.map(a => hexToRGB(a)).flat()
+  console.log(default2dArray)
+  return default2dArray
 }
 
 async function main() {
@@ -420,7 +456,7 @@ async function main() {
   mainGrid = new Grid(gridSize, Object.keys(tileSet))
   mainGrid.beginCollapse()
   console.log(mainGrid)
-  return gridToArray(mainGrid.gridMatrix)
+  arrToImg(gridToArray(mainGrid.gridMatrix))
 }
 
 (async() => {
