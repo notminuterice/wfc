@@ -2,7 +2,8 @@
   "name": "wfc",
   "version": "1.0.0",
   "description": "",
-  "main": "backup.js",
+  "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "canvas": "^3.0.1",
-    "get-pixels": "^3.3.3",
-    "jimp": "^1.6.0"
+    "express": "^4.21.2",
+    "get-pixels": "^3.3.3"
   }
 }

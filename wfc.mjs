@@ -405,7 +405,7 @@ async function getPixelValues(path){
   })
 }
 
-function arrToImg(imgData) {
+function arrToImg(imgData, output) {
   const pixelSize = 1
   const canvas = createCanvas(imgData[0].length * pixelSize, imgData.length * pixelSize)
   const ctx = canvas.getContext("2d")
@@ -417,7 +417,7 @@ function arrToImg(imgData) {
     })
   })
 
-  const out = fs.createWriteStream("./test.png");
+  const out = fs.createWriteStream(`./output/${output}.png`);
   const stream = canvas.createPNGStream()
   stream.pipe(out)
 }
@@ -445,22 +445,19 @@ function gridToArray(g){
     })
   })
 
-  // const flattenedHexArray = default2dArray.flat()
-  // const flattenedRGBArray = flattenedHexArray.map(a => hexToRGB(a)).flat()
-  console.log(default2dArray)
   return default2dArray
 }
 
-async function main() {
+async function main(output) {
   await getPixelValues("grass2.png"); // Ensure this completes before moving on
   mainGrid = new Grid(gridSize, Object.keys(tileSet))
   mainGrid.beginCollapse()
-  console.log(mainGrid)
-  arrToImg(gridToArray(mainGrid.gridMatrix))
+  arrToImg(gridToArray(mainGrid.gridMatrix), output)
+  console.log("Image generation complete!")
 }
 
 (async() => {
-  console.log(await main())
+  await main("forest")
 })()
 
 export default main
