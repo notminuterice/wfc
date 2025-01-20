@@ -3,7 +3,9 @@ import multer from "multer"
 import cors from "cors"
 import { dirname } from 'path'
 import { fileURLToPath } from 'url'
+import sizeOf from "image-size"
 import wfc from "./wfc.mjs"
+import fs from "fs"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -32,8 +34,10 @@ app.post("/upload", upload.single("image"), async (req, res) => {
     }
 
     console.log("File uploaded successfully");
-    console.log(req.file.filename);
-    await wfc(req.file.filename, data.outPath);
+
+    const dimensions = sizeOf(`./input/${req.file.filename}`)
+    console.log(`./input/${req.file.filename}`, data.outPath, dimensions, data.tileSize)
+    await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, data.tileSize);
 
     res.status(200).json({
       message: "Image generation complete",

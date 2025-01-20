@@ -1,17 +1,23 @@
 import React, {useState} from "react";
 import s from "./Home.module.css"
 import axios from "axios"
-
+import Grid from "../components/Grid";
 function Home() {
-  const [imgFile, setImgFile] = useState();
+  const [imgFile, setImgFile] = useState()
   const [imgPreview, setImgPreview] = useState()
-  const [outUrl, setOutUrl] = useState();
+  const [outUrl, setOutUrl] = useState()
+  const [outName, setOutName] = useState()
+  const [tileSize, setTileSize] = useState()
 
   function fileChange(event) {
     let inputFile = event.target.files[0]
-    setImgFile(inputFile);
+    setImgFile(inputFile)
     setImgPreview(URL.createObjectURL(inputFile))
     //addFile()
+  }
+
+  function tileSizeChange(event) {
+    setTileSize(event.target.value) 
   }
 
   async function addFile() {
@@ -22,7 +28,8 @@ function Home() {
 
     const formData = new FormData()
     formData.append("image", imgFile)
-    formData.append("outPath", "tests")
+    formData.append("outPath", outName)
+    formData.append("tileSize", tileSize)
     try {
       const res = await axios.post("http://localhost:8000/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -34,6 +41,10 @@ function Home() {
       console.error("Error uploading image:", error);
       alert("An error occurred while uploading the image.");
     }
+  }
+
+  function nameChange(event) {
+    setOutName(event.target.value)
   }
 
   return (
@@ -48,12 +59,17 @@ function Home() {
         <div className={s.input}>
           <h2>Input</h2>
           <div className={s.imgWrapper}>
+            {/* <div className={s.grid}>
+              <Grid inputGridSize={inputGridSize}/>
+            </div> */}
             <img src={imgPreview} alt="forest" className={s.input} />
           </div>
           <input type="file" accept="image/*" onChange={fileChange} />
           <button onClick={addFile}>
             Begin WFC
           </button>
+          <input type="text" onChange={nameChange} />
+          <input type="number" onChange={tileSizeChange} />
         </div>
 
         <div className={s.output}>
