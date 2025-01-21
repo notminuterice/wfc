@@ -249,8 +249,8 @@ class Grid{
         return
       }
       if (this.gridMatrix[lowestCell.y][lowestCell.x].possibleTiles.length == 0){
-        console.log('out of possibilities')
-        return false
+        //console.log('out of possibilities')
+        //return false
       }
     }
     this.collapsedCells.push(`${lowestCell.x.toString()},${lowestCell.y.toString()}`)
@@ -332,17 +332,23 @@ function pixelsToMatrix(pxs, tileSize){
   return output
 }
 
-//grabs all of the pixels within the given range and flattens into an array
-function getPixelsT(startX, startY, size, pixelArr, imgSize){
-  let pixelVals = []
-  for (let y = 0; y < size; y++){
-    for (let x = 0; x < size; x++){
-      let pixelPosition = startX*4 + startY*imgSize.w*4+ x*4 + y*imgSize.h*4 //position of the R value in the RGBA of that pixel
-      pixelVals.push(...pixelArr.slice(pixelPosition, pixelPosition+4)) //pushes the RGBA value to the array
+
+function getPixelsT(startX, startY, size, pixelArr, imgSize) {
+  const block = [];
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const row = startY + y
+      const col = startX + x
+      const i = (row * imgSize.w + col) * 4
+      block.push(
+        pixelArr[i],      //R
+        pixelArr[i + 1],  //G
+        pixelArr[i + 2],  //B
+        pixelArr[i + 3]   //A
+      )
     }
   }
-
-  return pixelVals
+  return block
 }
 
 //gets all pixel colour values from the img and creates tiles from them
@@ -354,13 +360,21 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
         return
       }
       let pixelVals = Array.from(pixels.data)
-      for(let x = 0; x < imgSize.w; x+=tileSize){
-        for(let y = 0; y < imgSize.h; y+=tileSize){
-          let tileKey = (Object.keys(tileSet).length+1).toString()
-          tileSet[tileKey] = new Tile(pixelsToMatrix(getPixelsT(y, x, tileSize, pixelVals, imgSize), tileSize), tileKey, tileSize, imgSize)
-          //image(c, x*5+10, y*5+10) //displays the tile
+
+      for (let y = 0; y < imgSize.h; y += tileSize) {
+        for (let x = 0; x < imgSize.w; x += tileSize) {
+          const tileKey = (Object.keys(tileSet).length+1).toString()
+          tileSet[tileKey] = new Tile(
+            pixelsToMatrix(
+              getPixelsT(x, y, tileSize, pixelVals, imgSize),
+              tileSize
+            ),
+            tileKey,
+            tileSize,
+            imgSize
+          )
         }
-      }
+       }
       
       for (let i = 1; i <= Object.keys(tileSet).length; i++){
         tileSet[i].generateAdjacencyRules(Object.values(tileSet), i)
@@ -414,9 +428,20 @@ function arrToImg(imgData, output, pixelSize) {
     })
   })
 
+  while (fs.existsSync(`./output/${output}.png`)){
+    let splOut = output.split("(")
+    if (splOut.length >= 2){
+      let num = parseInt(splOut.at(-1).split(")"))
+      splOut[splOut.length-1] = "(" + (num + 1).toString() + ")"
+      output = splOut.join("")
+    } else {
+      output = output + "(1)"
+    }
+  }
   const out = fs.createWriteStream(`./output/${output}.png`);
   const stream = canvas.createPNGStream()
   stream.pipe(out)
+  return output
 }
 
 function gridToArray(g, tileSize, tileSet) {
@@ -445,7 +470,6 @@ function gridToArray(g, tileSize, tileSet) {
 }
 
 async function main(input, output, dimensions, tile) {
-  console.log(input, output, dimensions, tile)
   const imgSize = {
     w: dimensions.width,
     h: dimensions.height
@@ -458,19 +482,18 @@ async function main(input, output, dimensions, tile) {
   const gridSize = 8
 
   tileSet = await getPixelValues(input, tileSize, tileSet, imgSize); // Ensure this completes before moving on
-  console.log(Object.values(tileSet).map(t => t.grid))
   mainGrid = new Grid(gridSize, Object.keys(tileSet), tileSet)
   let success = mainGrid.beginCollapse()
   if (success == false){
     console.log("failed")
     return
   }
-  arrToImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize)
   console.log("Image generation complete!")
+  return arrToImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize)
 }
 
 
 
-//main('./input/frfargfszfvsdfv.png', "jiejiijef", {width:35, height:25}, 5)
+//main('./input/scrungly.png', "oa", {width:30, height:20}, 5)
 
 export default main
