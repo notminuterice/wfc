@@ -122,8 +122,8 @@ class Tile{
     let i = position - 1
     let h = this.imgSize.h/this.tileSize
     let w = this.imgSize.w/this.tileSize
-    let aboveIndex = i - h
-    let belowIndex = i + h
+    let aboveIndex = i - w
+    let belowIndex = i + w
     let leftIndex = i - 1
     let rightIndex = i + 1
     if (Math.floor((leftIndex)/w) == Math.floor((i) / w) && i != 0){
@@ -139,12 +139,12 @@ class Tile{
     if (aboveIndex >= 0){
       this.adjacencyRules.up.push(otherTiles[aboveIndex].k.toString())
     } else {
-      this.adjacencyRules.up.push(otherTiles[i + (h - 1)*(h)].k.toString())
+      this.adjacencyRules.up.push(otherTiles[i + (w - 1)*(w)].k.toString())
     }
     if (belowIndex < otherTiles.length){
       this.adjacencyRules.down.push(otherTiles[belowIndex].k.toString())
     } else {
-      this.adjacencyRules.down.push(otherTiles[i - ((h - 1) * (h))].k.toString())
+      this.adjacencyRules.down.push(otherTiles[i - ((w - 1) * (w))].k.toString())
     }
 
   }
@@ -375,7 +375,7 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
           )
         }
        }
-      
+      //console.log(tileSet)
       for (let i = 1; i <= Object.keys(tileSet).length; i++){
         tileSet[i].generateAdjacencyRules(Object.values(tileSet), i)
       }
@@ -494,6 +494,6 @@ async function main(input, output, dimensions, tile) {
 
 
 
-//main('./input/scrungly.png', "oa", {width:30, height:20}, 5)
+//main('./input/Dungeontilesetold.png', "bl", {width:160, height:192}, 16)
 
 export default main
