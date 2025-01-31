@@ -139,12 +139,12 @@ class Tile{
     if (aboveIndex >= 0){
       this.adjacencyRules.up.push(otherTiles[aboveIndex].k.toString())
     } else {
-      this.adjacencyRules.up.push(otherTiles[i + (w - 1)*(w)].k.toString())
+      //this.adjacencyRules.up.push(otherTiles[i + (w - 1)*(w)].k.toString())
     }
     if (belowIndex < otherTiles.length){
       this.adjacencyRules.down.push(otherTiles[belowIndex].k.toString())
     } else {
-      this.adjacencyRules.down.push(otherTiles[i - ((w - 1) * (w))].k.toString())
+      //this.adjacencyRules.down.push(otherTiles[i - ((w - 1) * (w))].k.toString())
     }
 
   }
@@ -479,14 +479,14 @@ async function main(input, output, dimensions, tile) {
   const tileSize = parseInt(tile) //size of each tile (e.g. 3x3)
   const pixelSize = 2
   let mainGrid //holds the grid object
-  const gridSize = 8
+  const gridSize = 32
 
   tileSet = await getPixelValues(input, tileSize, tileSet, imgSize); // Ensure this completes before moving on
   mainGrid = new Grid(gridSize, Object.keys(tileSet), tileSet)
   let success = mainGrid.beginCollapse()
   if (success == false){
     console.log("failed")
-    return
+    
   }
   console.log("Image generation complete!")
   return arrToImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize)
@@ -494,6 +494,6 @@ async function main(input, output, dimensions, tile) {
 
 
 
-//main('./input/Dungeontilesetold.png', "bl", {width:160, height:192}, 16)
+//main('./input/Dungeontileseroom.png', "bl", {width:160, height:192}, 16)
 
 export default main
