@@ -57,3 +57,11 @@ body{
   overflow: hidden;
   border: 1px solid black;
 }
+.input_vals{
+  display: flex;
+  flex-direction: column;
+}
+
+.beginbutton{
+  width: 100px;
+}

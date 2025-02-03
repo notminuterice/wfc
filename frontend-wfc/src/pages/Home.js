@@ -8,6 +8,7 @@ function Home() {
   const [outUrl, setOutUrl] = useState()
   const [outName, setOutName] = useState()
   const [tileSize, setTileSize] = useState()
+  const [gridSize, setGridSize] = useState()
 
   function fileChange(event) {
     let inputFile = event.target.files[0]
@@ -18,6 +19,9 @@ function Home() {
 
   function tileSizeChange(event) {
     setTileSize(event.target.value) 
+  }
+  function gridSizeChange(event) {
+    setGridSize(event.target.value) 
   }
 
   async function addFile() {
@@ -30,6 +34,7 @@ function Home() {
     formData.append("image", imgFile)
     formData.append("outPath", outName)
     formData.append("tileSize", tileSize)
+    formData.append("gridSize", gridSize)
     try {
       const res = await axios.post("http://localhost:8000/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -65,11 +70,14 @@ function Home() {
             <img src={imgPreview} alt="forest" className={s.input} />
           </div>
           <input type="file" accept="image/*" onChange={fileChange} />
-          <button onClick={addFile}>
-            Begin WFC
-          </button>
-          <input type="text" onChange={nameChange} />
-          <input type="number" onChange={tileSizeChange} />
+          <div className={s.input_vals}>
+            <input type="text" onChange={nameChange} placeholder="Output name"/>
+            <input type="number" onChange={tileSizeChange} placeholder="Tile size"/>
+            <input type="number" onChange={gridSizeChange} placeholder="Grid size"/>
+            <button onClick={addFile} className={s.beginbutton}>
+              Begin WFC
+            </button>
+          </div>
         </div>
 
         <div className={s.output}>

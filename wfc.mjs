@@ -38,32 +38,28 @@ class MinHeap{
 
   heapifyUp() {
     let i = this.arr.length - 1
-
     while (i > 0) {
-        let parentIndex = this.getParentIndex(i)
-        if (this.arr[i].entropy >= this.arr[parentIndex].entropy) break
-        [i, parentIndex] = [parentIndex, i]
+      const parentIndex = this.getParentIndex(i)
+      if (this.arr[i].entropy >= this.arr[parentIndex].entropy) break
+      [this.arr[i], this.arr[parentIndex]] = [this.arr[parentIndex], this.arr[i]]
+      i = parentIndex
     }
   }
 
   heapifyDown() {
-      let i = 0
+    let i = 0
+    while (true) {
+      const left = this.getLeftChildIndex(i)
+      const right = this.getRightChildIndex(i)
+      let smallest = i
 
-      while (true) {
-          let leftChildIndex = this.getLeftChildIndex(i)
-          let rightChildIndex = this.getRightChildIndex(i)
-          let smallest = i
+      if (left < this.arr.length && this.arr[left].entropy < this.arr[smallest].entropy) smallest = left
+      if (right < this.arr.length && this.arr[right].entropy < this.arr[smallest].entropy) smallest = right
+      if (smallest === i) break
 
-          if (leftChildIndex < this.arr.length && this.arr[leftChildIndex].entropy < this.arr[smallest].entropy) {
-              smallest = leftChildIndex
-          }
-          if (rightChildIndex < this.arr.length && this.arr[rightChildIndex].entropy < this.arr[smallest].entropy) {
-              smallest = rightChildIndex
-          }
-          if (smallest === i) break
-
-          [i, smallest] = [smallest, i]
-      }
+      [this.arr[i], this.arr[smallest]] = [this.arr[smallest], this.arr[i]]
+      i = smallest
+    }
   }
 
   //runs heapifyDown until its fully sorted
@@ -103,8 +99,8 @@ class MinHeap{
 //a tile representing an nxn grid of pixel values. the top left pixel of a tile goes in each cell within the grid
 class Tile{
   constructor(grid, k, tileSize, imgSize){
-    this.grid = grid //pixel matrix
-    this.k = k; //tile key
+    this.grid = grid
+    this.k = k
     this.tileSize = tileSize
     this.frequencyHint = 1
     this.imgSize = imgSize
@@ -189,7 +185,7 @@ class Cell{
 
 class Grid{
   constructor(gridSize, tiles, tileSet){
-    //this.gridMatrix = (new Array(gridSize)).fill((new Array(gridSize).fill("")));
+    //this.gridMatrix = (new Array(gridSize)).fill((new Array(gridSize).fill("")))
     this.gridMatrix = []
     this.gridSize = gridSize
     this.priorityQueue = new MinHeap([])
@@ -325,7 +321,7 @@ function hexToRGB(h) {
 
 //converts the pixel output from the get() function into coordinates
 function pixelsToMatrix(pxs, tileSize){
-  let output = [...Array(tileSize)].map(a => Array(tileSize));
+  let output = [...Array(tileSize)].map(a => Array(tileSize))
   for (let i = 0; i < pxs.length; i+=4){
     output[Math.floor(i/(4*tileSize))][(i/4)%tileSize] = rgbToHex(pxs.slice(i, i+3)) //matches pixel colour value with its x and y coordinates
   }
@@ -334,7 +330,7 @@ function pixelsToMatrix(pxs, tileSize){
 
 
 function getPixelsT(startX, startY, size, pixelArr, imgSize) {
-  const block = [];
+  const block = []
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const row = startY + y
@@ -438,7 +434,7 @@ function arrToImg(imgData, output, pixelSize) {
       output = output + "(1)"
     }
   }
-  const out = fs.createWriteStream(`./output/${output}.png`);
+  const out = fs.createWriteStream(`./output/${output}.png`)
   const stream = canvas.createPNGStream()
   stream.pipe(out)
   return output
@@ -469,7 +465,7 @@ function gridToArray(g, tileSize, tileSet) {
   return default2dArray
 }
 
-async function main(input, output, dimensions, tile) {
+async function main(input, output, dimensions, tile, gridSize) {
   const imgSize = {
     w: dimensions.width,
     h: dimensions.height
@@ -479,9 +475,9 @@ async function main(input, output, dimensions, tile) {
   const tileSize = parseInt(tile) //size of each tile (e.g. 3x3)
   const pixelSize = 2
   let mainGrid //holds the grid object
-  const gridSize = 32
+  console.log(gridSize, typeof gridSize)
 
-  tileSet = await getPixelValues(input, tileSize, tileSet, imgSize); // Ensure this completes before moving on
+  tileSet = await getPixelValues(input, tileSize, tileSet, imgSize)
   mainGrid = new Grid(gridSize, Object.keys(tileSet), tileSet)
   let success = mainGrid.beginCollapse()
   if (success == false){
