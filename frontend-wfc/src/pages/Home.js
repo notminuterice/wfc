@@ -61,7 +61,7 @@ function Home() {
       </div>
 
       <div className={s.contentWrapper}>
-        <div className={s.input}>
+        <div className={s.inputWrapper}>
           <h2>Input</h2>
           <div className={s.imgWrapper}>
             {/* <div className={s.grid}>
@@ -80,7 +80,7 @@ function Home() {
           </div>
         </div>
 
-        <div className={s.output}>
+        <div className={s.outputWrapper}>
           <h2>Output</h2>
           <div className={s.imgWrapper}>
             <img src={outUrl} alt="forest" className={s.output} />

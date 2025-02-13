@@ -36,12 +36,13 @@ app.post("/upload", upload.single("image"), async (req, res) => {
     console.log("File uploaded successfully");
     //console.log(data)
     const dimensions = sizeOf(`./input/${req.file.filename}`)
-    let outP = await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, data.tileSize, data.gridSize);
-
-    res.status(200).json({
-      message: "Image generation complete",
-      imgUrl: `http://localhost:8000/images/${outP}.png`
-    })
+    let outP = await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, parseInt(data.tileSize), parseInt(data.gridSize));
+    setTimeout(() => {
+      res.status(200).json({
+        message: "Image generation complete",
+        imgUrl: `http://localhost:8000/images/${outP}.png`
+      })
+    }, 500)
   } catch (err) {
     console.error("File upload error:", err);
     res.status(500).send("An error occurred during the upload");

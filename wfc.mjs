@@ -168,8 +168,7 @@ class Cell{
 
   collapse(){
     if (this.possibleTiles.length == 0){
-      console.log("OUT OF POSSIBILITIES")
-      return
+      throw new Error("OUT OF POSSIBILITIES")
     }
 
     let weightedTiles = []
@@ -194,6 +193,7 @@ class Grid{
     this.iterationCount = 0
     this.collapsedCells = []
     this.tileSet = tileSet
+    this.failed = false
     this.initialiseGrid()
   }
 
@@ -218,16 +218,23 @@ class Grid{
 
   beginCollapse(){
     let outp = this.collapse(0, 0)
+    if (this.failed == true){
+      return false
+    }
     return outp
   }
 
   collapse(x, y){
     this.gridMatrix[y][x].collapse()
     this.propagate(x, y)
-    let outp = this.chooseNextCell()
-    if (outp == false){
-      return false
+    if (this.failed){
+      console.log("failed")
+      return
     }
+    let outp = this.chooseNextCell()
+    // if (outp == false){
+    //   return false
+    // }
   }
 
   chooseNextCell(){
@@ -249,6 +256,7 @@ class Grid{
         //return false
       }
     }
+
     this.collapsedCells.push(`${lowestCell.x.toString()},${lowestCell.y.toString()}`)
     this.collapsedCells = [...new Set(this.collapsedCells)]
     if (lowestCell == null) return
@@ -262,7 +270,6 @@ class Grid{
   propagate(x, y){
     if (this.gridMatrix[y][x].chosenTile != null){
       this.gridMatrix[y][x].neighbours.forEach(n => {
-
         let dir = this.getDirectionTile(n)
         if (this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile != null) return
 
@@ -287,7 +294,10 @@ class Grid{
 
         this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.filter(t => thisPossibleTiles.includes(t))
         this.gridMatrix[y + dir[1]][x + dir[0]].entropy = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length
-
+        if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length == 0 && this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile == null){
+          this.failed = true
+          return
+        }
         let e = {x:x + dir[0], y:y + dir[1], e:this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length}
         this.priorityQueue.insert(e)
         if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length != prevTileValues.length){
@@ -448,6 +458,15 @@ function gridToArray(g, tileSize, tileSet) {
     }
     let tileRow = []
     row.forEach((cell, x) => {
+      if (!cell.chosenTile){
+        cell.chosenTile
+        for (let tileY = 0; tileY < tileSize; tileY++){
+          for (let x = 0; x < tileSize; x++){
+            default2dArray[y * tileSize + tileY].push("#000000")
+          }
+        }
+        return
+      }
       let rowTile = tileSet[cell.chosenTile]
       if (x == 0){
         for (let i = 0; i < rowTile.grid.length; i++){
@@ -466,6 +485,7 @@ function gridToArray(g, tileSize, tileSet) {
 }
 
 async function main(input, output, dimensions, tile, gridSize) {
+  let tries = 0
   const imgSize = {
     w: dimensions.width,
     h: dimensions.height
@@ -476,13 +496,16 @@ async function main(input, output, dimensions, tile, gridSize) {
   const pixelSize = 2
   let mainGrid //holds the grid object
   console.log(gridSize, typeof gridSize)
-
+  let success = false
   tileSet = await getPixelValues(input, tileSize, tileSet, imgSize)
-  mainGrid = new Grid(gridSize, Object.keys(tileSet), tileSet)
-  let success = mainGrid.beginCollapse()
-  if (success == false){
-    console.log("failed")
-    
+
+  while (tries < 100 && success == false){
+    tries++
+    mainGrid = new Grid(gridSize, Object.keys(tileSet), tileSet)
+    success = mainGrid.beginCollapse()
+    if (success == false){
+      console.log(`failed: iter ${tries}`)
+    }
   }
   console.log("Image generation complete!")
   return arrToImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize)
@@ -490,6 +513,6 @@ async function main(input, output, dimensions, tile, gridSize) {
 
 
 
-//main('./input/Dungeontileseroom.png', "bl", {width:160, height:192}, 16)
+//main('./input/Dungeontileseroom.png', "bl", {width:160, height:192}, 16, 10)
 
 export default main
