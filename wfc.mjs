@@ -495,10 +495,18 @@ async function main(input, output, dimensions, tile, gridSize) {
   const tileSize = parseInt(tile) //size of each tile (e.g. 3x3)
   const pixelSize = 2
   let mainGrid //holds the grid object
-  console.log(gridSize, typeof gridSize)
   let success = false
-  tileSet = await getPixelValues(input, tileSize, tileSet, imgSize)
-
+  if (imgSize.w % tileSize != 0 || imgSize.h % tileSize != 0){
+    console.log("Invalid tile size")
+    throw Error("Invalid tile size")
+  }
+  try {
+    tileSet = await getPixelValues(input, tileSize, tileSet, imgSize)
+  } catch (err){
+    console.log("Tileset generation failed")
+    console.log(err)
+  }
+  console.log("Tileset generated!")
   while (tries < 100 && success == false){
     tries++
     mainGrid = new Grid(gridSize, Object.keys(tileSet), tileSet)
