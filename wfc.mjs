@@ -6,15 +6,15 @@ import fs from "fs"
 //element that can be added to and removed from the heap
 class HeapElement{
   constructor(self, x, y, e){
-    this.x = x //x coordinate within the grid
-    this.y = y //y coordinate within the grid
+    this.x = x       //x coordinate within the grid
+    this.y = y       //y coordinate within the grid
     this.entropy = e //entropy of the tile
   }
 }
 
 class MinHeap{
   constructor(initialArr) {
-    this.arr = [] //array that holds the heap elements
+    this.arr = initialArr //array that holds the heap elements
   }
 
   peek() {
@@ -36,16 +36,19 @@ class MinHeap{
     return i * 2 + 2
   }
 
+  //runs through the heap from the bottom and swaps an element with its parent if its entropy is lower (only for inserting)
   heapifyUp() {
     let i = this.arr.length - 1
     while (i > 0) {
       const parentIndex = this.getParentIndex(i)
-      if (this.arr[i].entropy >= this.arr[parentIndex].entropy) break
+      if (this.arr[i].entropy >= this.arr[parentIndex].entropy) break //breaks if the parent is smaller or equal to the current element
       [this.arr[i], this.arr[parentIndex]] = [this.arr[parentIndex], this.arr[i]]
       i = parentIndex
     }
   }
 
+  /*runs through the heap from the top and swaps the parent with the smallest child 
+  if there is one smaller than the parent (only for removing)*/
   heapifyDown() {
     let i = 0
     while (true) {
@@ -55,7 +58,7 @@ class MinHeap{
 
       if (left < this.arr.length && this.arr[left].entropy < this.arr[smallest].entropy) smallest = left
       if (right < this.arr.length && this.arr[right].entropy < this.arr[smallest].entropy) smallest = right
-      if (smallest === i) break
+      if (smallest === i) break //breaks if there are no children smaller than the current element
 
       [this.arr[i], this.arr[smallest]] = [this.arr[smallest], this.arr[i]]
       i = smallest
@@ -73,25 +76,26 @@ class MinHeap{
   insert(element) {
     this.arr.push(element)
     this.heapifyUp()
-    //removes any elements with entropy 0 - already collapsed
 
+    //removes any elements with entropy 0 - already collapsed
     if (this.arr[0].entropy == 0){
       this.arr.shift()
     }
   }
 
+  //removes the smallest value from the start of the heap
   removeElement() {
     if (this.arr.length == 0) return
+
     //removes any elements with entropy 0 - already collapsed
     while (this.arr[0].entropy == 0){
       this.arr.pop()
     }
 
-
-    let min = this.arr[0] //grabs root node from heap
+    let min = this.arr[0]         //grabs root node from heap
     this.arr[0] = this.arr.at(-1) //sets the root to the last node
-    this.arr.pop() //removes the last node
-    this.heapify() //heapifies
+    this.arr.pop()                //removes the last node
+    this.heapify()                //heapifies
     return min
   }
 }
@@ -99,48 +103,41 @@ class MinHeap{
 //a tile representing an nxn grid of pixel values. the top left pixel of a tile goes in each cell within the grid
 class Tile{
   constructor(grid, k, tileSize, imgSize){
-    this.grid = grid
-    this.k = k
-    this.tileSize = tileSize
-    this.frequencyHint = 1
-    this.imgSize = imgSize
+    this.grid = grid         //2D array containing the grid
+    this.k = k               //tile key (integer identifying the tile)
+    this.tileSize = tileSize //number of pixels in the width/height of the tile (in an nxn grid, n is the tile size)
+    this.frequencyHint = 1   //how frequently this tile appears in the original image
+    this.imgSize = imgSize   //object containing the height and width of the original image
 
+    //object where each direction has an array of tiles that can be put next to this tile (in that direction)
     this.adjacencyRules = {
-      "up": [], //up
-      "down": [],//down
-      "left": [], //right
-      "right": [] //left
+      "up": [],   //all of the tiles that can be above this tile
+      "down": [], //all of the tiles that can be below this tile
+      "left": [], //all of the tiles that can be to the left of this tile
+      "right": [] //all of the tiles that can be to the right of this tile
     }
 
   }
 
+  //constructs the adjacencyRules object based on information gathered in the image
   generateAdjacencyRules(otherTiles, position){
-    let i = position - 1
-    let h = this.imgSize.h/this.tileSize
-    let w = this.imgSize.w/this.tileSize
-    let aboveIndex = i - w
-    let belowIndex = i + w
-    let leftIndex = i - 1
-    let rightIndex = i + 1
-    if (Math.floor((leftIndex)/w) == Math.floor((i) / w) && i != 0){
+    let i = position - 1                  //the index of the tile in the image
+    let w = this.imgSize.w/this.tileSize  //the width of the image
+    let aboveIndex = i - w  //index of the tile above (subtract the width from the index to go up one row)
+    let belowIndex = i + w  //index of the tile below (add the width to the index to go down one row)
+    let leftIndex = i - 1   //index of the tile to the left (subtract one from the index to go left one)
+    let rightIndex = i + 1  //index of the tile to the right (add one to the index to go right one)
+    if (i != 0){    //
       this.adjacencyRules.left.push(otherTiles[leftIndex].k.toString())
-    } else {
-      this.adjacencyRules.left.push(otherTiles[i + (w- 1)].k.toString())
     }
-    if (Math.floor((rightIndex)/w) == Math.floor((i) / w) && i != otherTiles.length-1){
+    if (i != otherTiles.length-1){
       this.adjacencyRules.right.push(otherTiles[rightIndex].k.toString())
-    } else {  
-      this.adjacencyRules.right.push(otherTiles[i - (w - 1)].k.toString())
     }
     if (aboveIndex >= 0){
       this.adjacencyRules.up.push(otherTiles[aboveIndex].k.toString())
-    } else {
-      //this.adjacencyRules.up.push(otherTiles[i + (w - 1)*(w)].k.toString())
     }
     if (belowIndex < otherTiles.length){
       this.adjacencyRules.down.push(otherTiles[belowIndex].k.toString())
-    } else {
-      //this.adjacencyRules.down.push(otherTiles[i - ((w - 1) * (w))].k.toString())
     }
 
   }
