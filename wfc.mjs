@@ -2,16 +2,6 @@ import getPixels from "get-pixels"
 import { createCanvas } from "canvas"
 import fs from "fs"
 
-
-//element that can be added to and removed from the heap
-class HeapElement{
-  constructor(self, x, y, e){
-    this.x = x       //x coordinate within the grid
-    this.y = y       //y coordinate within the grid
-    this.entropy = e //entropy of the tile
-  }
-}
-
 class MinHeap{
   constructor(initialArr) {
     this.arr = initialArr //array that holds the heap elements
@@ -100,7 +90,8 @@ class MinHeap{
   }
 }
 
-//a tile representing an nxn grid of pixel values. the top left pixel of a tile goes in each cell within the grid
+/*a tile representing an nxn grid of pixel values in the ORIGINAL image. 
+the top left pixel of a tile goes in each cell within the grid*/
 class Tile{
   constructor(grid, k, tileSize, imgSize){
     this.grid = grid         //2D array containing the grid
@@ -127,73 +118,78 @@ class Tile{
     let belowIndex = i + w  //index of the tile below (add the width to the index to go down one row)
     let leftIndex = i - 1   //index of the tile to the left (subtract one from the index to go left one)
     let rightIndex = i + 1  //index of the tile to the right (add one to the index to go right one)
-    if (i != 0){    //
+
+    if (leftIndex >= 0){  //checks if the left index is higher than the lower index boundary
       this.adjacencyRules.left.push(otherTiles[leftIndex].k.toString())
     }
-    if (i != otherTiles.length-1){
+    if (rightIndex <= otherTiles.length-1){   //checks if the right index is lower than the higher index boundary
       this.adjacencyRules.right.push(otherTiles[rightIndex].k.toString())
     }
-    if (aboveIndex >= 0){
+    if (aboveIndex >= 0){ //checks the above index is higher than the lower index boundary
       this.adjacencyRules.up.push(otherTiles[aboveIndex].k.toString())
     }
-    if (belowIndex < otherTiles.length){
+    if (belowIndex < otherTiles.length){  //checks if the below index is lower than the higher index boundary
       this.adjacencyRules.down.push(otherTiles[belowIndex].k.toString())
     }
 
   }
 }
 
+//class for each individual cell within the OUTPUT grid
 class Cell{
   constructor(x, y, tiles, gridSize, tileSet){
-    this.x = x
-    this.y = y
-    this.possibleTiles = tiles
-    this.chosenTile = null
-    this.neighbours = []
-    this.gridSize = gridSize
-    this.setNeighbours()
-    this.entropy = -1
-    this.tileSet = tileSet
+    this.x = x                  //x position within the output grid
+    this.y = y                  //y position within the output grid
+    this.possibleTiles = tiles  //the possible tiles that this cell could represent
+    this.chosenTile = null      //k value of the tile that has been selected
+    this.neighbours = []        //the cells around the tile (if it is on the top row, it will not have an "up" neighbour)
+    this.gridSize = gridSize    //width/height of the grid
+    this.setNeighbours()        //adds values to the neighbours array
+    this.entropy = -1           //entropy of the tile
+    this.tileSet = tileSet      //the tileset containing all the tiles
   }
 
+  //adds values to the neighbours array
   setNeighbours(){
-    if(this.y > 0) this.neighbours.push("up") //x and y coords of neighbour above cell
-    if (this.y < this.gridSize-1) this.neighbours.push("down") //x and y coords of neighbour below cell
-    if (this.x > 0) this.neighbours.push("left") //x and y coords of neighbour left of cell
-    if (this.x < this.gridSize-1) this.neighbours.push("right") //x and y coords of neighbour right of cell
+    if(this.y > 0) this.neighbours.push("up")                   //adds an "up" neighbour if it is not on the top row
+    if (this.y < this.gridSize-1) this.neighbours.push("down")  //adds a "down" neighbour if it is not on the bottom row
+    if (this.x > 0) this.neighbours.push("left")                //adds a "left" neighbour if it is not at the start of a row
+    if (this.x < this.gridSize-1) this.neighbours.push("right") //adds a "right" neighbour if it is not at the end of a row
   }
 
+  //selects a tile to assign to the cell out of the possible tiles (collapsing)
   collapse(){
     if (this.possibleTiles.length == 0){
       throw new Error("OUT OF POSSIBILITIES")
     }
 
     let weightedTiles = []
+    //adds a tile multiple times to the weightedTiles array depending on its frequency hint
     for (const tile of this.possibleTiles) {
-      let addValue = (new Array(this.tileSet[tile].frequencyHint)).fill(tile)
-      weightedTiles.push(...addValue)
+      let addValue = (new Array(this.tileSet[tile].frequencyHint)).fill(tile) //array containing the tile [frequencyhint] number of times
+      weightedTiles.push(...addValue) //flattens the array and pushes all of the values to the weightedTiles array
     }
-    this.chosenTile = weightedTiles[Math.floor(Math.random()*weightedTiles.length)]
-    this.possibleTiles = []
-    this.entropy = -1
+    this.chosenTile = weightedTiles[Math.floor(Math.random()*weightedTiles.length)] //chooses a random tile in the array to be the chosen tile for this cell
+    this.possibleTiles = [] //empties possible tiles (tile already selected)
+    this.entropy = -1 //set entropy to -1 (takes out of the heap)
   }
 }
 
 class Grid{
   constructor(gridSize, tiles, tileSet){
-    //this.gridMatrix = (new Array(gridSize)).fill((new Array(gridSize).fill("")))
-    this.gridMatrix = []
-    this.gridSize = gridSize
-    this.priorityQueue = new MinHeap([])
-    this.complete = false
-    this.tiles = tiles
-    this.iterationCount = 0
-    this.collapsedCells = []
-    this.tileSet = tileSet
-    this.failed = false
-    this.initialiseGrid()
+    this.gridMatrix = []                  //2D array containing one cell in each element (the output grid)
+    this.gridSize = gridSize              //the size of the grid (same as the width and height)
+    this.priorityQueue = new MinHeap([])  //priority queue (minimum heap) containing the cells/indexes in the grid
+    this.complete = false                 //whether the collapse has finished
+    this.tiles = tiles                    //all of the tiles from the original image
+    this.iterationCount = 0               //current iteration 
+    this.collapsedCells = []              //list of cells that have already been collapsed
+    this.tileSet = tileSet                //the tileset object
+    this.failed = false                   //whether the collapse has failed (no more possible cell options)
+    this.initialiseGrid()                     
   }
 
+  //Fills the grid with default state cells
   initialiseGrid() {
     for (let y = 0; y < this.gridSize; y++){
       let row = []
@@ -204,6 +200,7 @@ class Grid{
     }
   }
 
+  //maps the directions to the coordinate translations
   getDirectionTile(direction){
     switch (direction){
       case "up": return [0, -1];
@@ -213,90 +210,95 @@ class Grid{
     }
   }
 
+  //starts the collapse from coordinate 0,0 on the grid
   beginCollapse(){
     let outp = this.collapse(0, 0)
     if (this.failed == true){
       return false
     }
-    return outp
+    return outp //return the output if successful, otherwise return false
   }
 
+  //collapses and propagates a given cell
   collapse(x, y){
-    this.gridMatrix[y][x].collapse()
+    this.gridMatrix[y][x].collapse() //runs the collapse function in the cell object at the specified coordinates
     this.propagate(x, y)
+    //cancels if the collapsing or propagating fails
     if (this.failed){
       console.log("failed")
       return
     }
-    let outp = this.chooseNextCell()
-    // if (outp == false){
-    //   return false
-    // }
+    this.chooseNextCell()
   }
 
+  //selects the next cell to collapse
   chooseNextCell(){
     this.iterationCount++
-    if (this.collapsedCells.length >= this.gridSize**2){
-      return
-    }
 
-    if (this.priorityQueue.arr.length == 0) return
+    if (this.collapsedCells.length >= this.gridSize**2) return  //ends if the number of collapsed cells has reached the number of positions in the grid
+    if (this.priorityQueue.arr.length == 0) return              //ends if there are no cells left to collapse
 
-    let lowestCell = this.priorityQueue.removeElement()
+    let lowestCell = this.priorityQueue.removeElement() //pops the cell with the lowest entropy
+
+    //runs until the lowest cell in the priority queue hasnt been collapsed
     while (this.collapsedCells.includes(`${lowestCell.x},${lowestCell.y}`) || this.gridMatrix[lowestCell.y][lowestCell.x].possibleTiles.length == 0){
-      lowestCell = this.priorityQueue.removeElement()
+      lowestCell = this.priorityQueue.removeElement() //pops the cell with the lowest entropy again
       if (lowestCell == null){
         return
       }
-      if (this.gridMatrix[lowestCell.y][lowestCell.x].possibleTiles.length == 0){
-        //console.log('out of possibilities')
-        //return false
-      }
     }
 
-    this.collapsedCells.push(`${lowestCell.x.toString()},${lowestCell.y.toString()}`)
-    this.collapsedCells = [...new Set(this.collapsedCells)]
-    if (lowestCell == null) return
-    this.collapse(lowestCell.x, lowestCell.y)
+    this.collapsedCells.push(`${lowestCell.x.toString()},${lowestCell.y.toString()}`) //adds the cell about to be collapsed to the collapsed cell list
+    this.collapsedCells = [...new Set(this.collapsedCells)] //removes any duplicates in the collapsed cell array
+    if (lowestCell == null) return                          //ends if the lowest entropy cell does not exist
+    this.collapse(lowestCell.x, lowestCell.y)               //collapses the lowest entropy cell
   }
 
-  addToHeap(cell){
-    this.priorityQueue.insert(cell)
-  }
-
+  //updates all of the surrounding cells after a cell has been collapsed
   propagate(x, y){
+    //if the current cell being propagated has not been collapsed
     if (this.gridMatrix[y][x].chosenTile != null){
+      //loops through all the neighbours of the current cell
       this.gridMatrix[y][x].neighbours.forEach(n => {
-        let dir = this.getDirectionTile(n)
-        if (this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile != null) return
+        let dir = this.getDirectionTile(n)                                      //converts the direction to a coordinate translation
+        if (this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile != null) return  //skips the neighbour if it has been collapsed
 
-        let prevTileValues = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles
-        let thisPossibleTiles = this.tileSet[this.gridMatrix[y][x].chosenTile.toString()].adjacencyRules[n]
+        let prevTileValues = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles                          //stores the previous possible tiles of the neighbour
+        let thisPossibleTiles = this.tileSet[this.gridMatrix[y][x].chosenTile.toString()].adjacencyRules[n] //stores the tile rules of the cell being propagated
 
+        //filters out the possible tiles for the neighbour that are not in the adjacency tile rules for the current cell
         this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.filter(t => thisPossibleTiles.includes(t))
+        //updates the cell entropy
         this.gridMatrix[y + dir[1]][x + dir[0]].entropy = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length
 
-        let e = {x:x + dir[0], y:y + dir[1], e:this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length}
+        let e = {x:x + dir[0], y:y + dir[1], e:this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length}  //element to be put in the priority queue
         this.priorityQueue.insert(e)
+        //propagates again if the number of possible tiles was updated
         if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length != prevTileValues.length){
           this.propagate(x + dir[0], y + dir[1])
         }
       })
-    } else {
+    } else {  //if the cell has been collapsed
       this.gridMatrix[y][x].neighbours.forEach(n => {
-        let dir = this.getDirectionTile(n)
-        if (this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile != null) return
-        let prevTileValues = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles
-        let thisPossibleTiles = this.gridMatrix[y][x].possibleTiles.map(t => this.tileSet[t].adjacencyRules[n]).flat()
+        let dir = this.getDirectionTile(n)                                      //converts the direction to a coordinate translation
+        if (this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile != null) return  //skips the neighbour if it has been collapsed
 
+        let prevTileValues = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles                                     //stores the previous possible tiles of the neighbour
+        let thisPossibleTiles = this.gridMatrix[y][x].possibleTiles.map(t => this.tileSet[t].adjacencyRules[n]).flat() //stores the tile rules of the cell being propagated
+
+        //filters out the possible tiles for the neighbour that are not in the adjacency tile rules for the current cell
         this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.filter(t => thisPossibleTiles.includes(t))
+        //updates the cell entropy
         this.gridMatrix[y + dir[1]][x + dir[0]].entropy = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length
+
+        //fails if there are no more possible tiles in the neighbour and it hasn't already been collapsed
         if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length == 0 && this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile == null){
           this.failed = true
           return
         }
-        let e = {x:x + dir[0], y:y + dir[1], e:this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length}
+        let e = {x:x + dir[0], y:y + dir[1], e:this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length} //element to be put in the priority queue
         this.priorityQueue.insert(e)
+        //propagates again if the number of possible tiles was updated
         if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length != prevTileValues.length){
           this.propagate(x + dir[0], y + dir[1])
         }
@@ -311,38 +313,30 @@ function rgbToHex(pixelVals){
 
   for (const pixel of pixelVals){
     let hexVal = pixel.toString(16) //converts value using base 16
-    outputStr += hexVal.length > 1 ? hexVal : "0" + hexVal //adds to the output - if only one digit adds a 0 before it
+    outputStr += hexVal.length > 1 ? hexVal : "0" + hexVal //adds to the output and adds a 0 before if there is only 1 digit
   }
 
   return outputStr
 }
 
-function hexToRGB(h) {
-  h = h.split("")
-  h.shift()
-  let r = parseInt(h.slice(0, 2).join(""), 16)
-  let g = parseInt(h.slice(2, 4).join(""), 16)
-  let b = parseInt(h.slice(4, 6).join(""), 16)
-  return([r, g, b, 255])
-}
-
-//converts the pixel output from the get() function into coordinates
+//converts the pixels from the image into a 2d array representing one tile
 function pixelsToMatrix(pxs, tileSize){
-  let output = [...Array(tileSize)].map(a => Array(tileSize))
+  let output = [...Array(tileSize)].map(a => Array(tileSize)) //initialises an empty 2d array with width and length tileSize
   for (let i = 0; i < pxs.length; i+=4){
     output[Math.floor(i/(4*tileSize))][(i/4)%tileSize] = rgbToHex(pxs.slice(i, i+3)) //matches pixel colour value with its x and y coordinates
   }
   return output
 }
 
-
+//gets the pixels in the range of the tile being processed
 function getPixelsT(startX, startY, size, pixelArr, imgSize) {
   const block = []
+  //loops through the x and y coordinates within the tile, starting at the top left pixel of the tile
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const row = startY + y
+      const row = startY + y 
       const col = startX + x
-      const i = (row * imgSize.w + col) * 4
+      const i = (row * imgSize.w + col) * 4 //finds the corresponding index of the pixel in the pixel array
       block.push(
         pixelArr[i],      //R
         pixelArr[i + 1],  //G
@@ -362,11 +356,13 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
         console.log("Bad image path")
         return
       }
-      let pixelVals = Array.from(pixels.data)
+      let pixelVals = Array.from(pixels.data) //turns the rgba values of the pixels into an array
 
+      //loops through the input image and creates tiles at regular intervals based on the tile size (will have duplicate tiles)
       for (let y = 0; y < imgSize.h; y += tileSize) {
         for (let x = 0; x < imgSize.w; x += tileSize) {
-          const tileKey = (Object.keys(tileSet).length+1).toString()
+          const tileKey = (Object.keys(tileSet).length+1).toString() //k value of the tile
+          //creates a new tile based on the pixels in the position of the tile
           tileSet[tileKey] = new Tile(
             pixelsToMatrix(
               getPixelsT(x, y, tileSize, pixelVals, imgSize),
@@ -378,35 +374,42 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
           )
         }
        }
-      //console.log(tileSet)
+      
+      //loops through the tileset and creates adjacency rules for each one
       for (let i = 1; i <= Object.keys(tileSet).length; i++){
         tileSet[i].generateAdjacencyRules(Object.values(tileSet), i)
       }
 
-      let flattenedTileset = {}
-      let newMapping = {}
+      let flattenedTileset = {} //object which will hold the tileset with no repetitions
+      let newMapping = {}       //object which maps the old tile keys to the new tile keys
+
+      //loops through the tileSet and looks for dupes, combines their adjacency rules and puts them in the flattenedTileset
       for (const tile of Object.values(tileSet)){
-        let dupeFound = false
+        let dupeFound = false //determines if there are two tiles with the same pixel matrix (exact same tiles)
+
+        //goes through the new flattened tileset and check if the current tile is equal to any of them
         for (let [nK, val] of Object.entries(flattenedTileset)){
-          if (JSON.stringify(val.grid) == JSON.stringify(tile.grid)){
+          if (JSON.stringify(val.grid) == JSON.stringify(tile.grid)){ //if the current tile is a duplicate of another tile in the flat tileset
+            //appends the adjecency rules of the current duplicate tile to the already existing tile in the flattened tileset
             flattenedTileset[nK].adjacencyRules.up.push(...tile.adjacencyRules.up)
             flattenedTileset[nK].adjacencyRules.down.push(...tile.adjacencyRules.down)
             flattenedTileset[nK].adjacencyRules.left.push(...tile.adjacencyRules.left)
             flattenedTileset[nK].adjacencyRules.right.push(...tile.adjacencyRules.right)
             dupeFound = true
-            newMapping[tile.k.toString()] = nK.toString()
-            flattenedTileset[nK].frequencyHint += 1
+            newMapping[tile.k.toString()] = nK.toString() //adds an entry to the map the links the old key with the new key
+            flattenedTileset[nK].frequencyHint += 1       //increases the frequency hint of the tile
           }
         }
         if (!dupeFound){
-          let newTile = JSON.parse(JSON.stringify(tile))
-          newTile.k = Object.values(flattenedTileset).length+1
-          flattenedTileset[newTile.k.toString()] = newTile
-          newMapping[tile.k.toString()] = newTile.k.toString()
+          let newTile = JSON.parse(JSON.stringify(tile))        //creates a copy of the tile to prevent changes to the original object
+          newTile.k = Object.values(flattenedTileset).length+1  //initialises a new key for the tile
+          flattenedTileset[newTile.k.toString()] = newTile      //adds the key-value pair of k and the tile into the flattened tileset
+          newMapping[tile.k.toString()] = newTile.k.toString()  //maps the old tile key to the new tile key
         }
 
       }
     
+      //updates all of the keys (which identify the tiles) in the adjacency rules to the new keys in the flattened tileset
       for (let [t, tile] of Object.entries(flattenedTileset)){
         for (let [d, dir] of Object.entries(tile.adjacencyRules)){
           for (let [a, n] of Object.entries(dir)){
@@ -420,10 +423,13 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
   })
 }
 
+//turns the output array back into an image and saves it
 function arrToImg(imgData, output, pixelSize) {
+  //creates a canvas to build the image
   const canvas = createCanvas(imgData[0].length * pixelSize, imgData.length * pixelSize)
   const ctx = canvas.getContext("2d")
 
+  //creates a coloured rectangle for every pixel in the image data
   imgData.forEach((row, y) => {
     row.forEach((colour, x) => {
       ctx.fillStyle = colour
@@ -431,29 +437,34 @@ function arrToImg(imgData, output, pixelSize) {
     })
   })
 
+  //changes the name of the file if the filename already exists
   while (fs.existsSync(`./output/${output}.png`)){
+    //splits the filename to find out if there is a duplicate (it will have brackets with a number if it is a dupe)
     let splOut = output.split("(")
-    if (splOut.length >= 2){
-      let num = parseInt(splOut.at(-1).split(")"))
-      splOut[splOut.length-1] = "(" + (num + 1).toString() + ")"
-      output = splOut.join("")
+    if (splOut.length >= 2){ //if there is a bracket
+      let num = parseInt(splOut.at(-1).split(")"))                //parses the number in the brackets
+      splOut[splOut.length-1] = "(" + (num + 1).toString() + ")"  //adds one to the number and puts it back in brackets
+      output = splOut.join("")                                    //joins the two values together to reconstruct the filename
     } else {
-      output = output + "(1)"
+      output = output + "(1)" //sets the default number to one if it has not already been duplicated
     }
   }
+  //saves the data to the file by piping it
   const out = fs.createWriteStream(`./output/${output}.png`)
   const stream = canvas.createPNGStream()
   stream.pipe(out)
   return output
 }
 
+//converts the 2d grid array to one that can be parsed by arrToImg()
 function gridToArray(g, tileSize, tileSet) {
-  let default2dArray = []
+  let default2dArray = [] //empty array which will hold the new flattened data
   g.forEach((row, y) => {
     for (let i = 0; i < tileSize; i++) {
-      default2dArray.push([])
+      default2dArray.push([]) //fills it with empty arrays
     }
     let tileRow = []
+    //
     row.forEach((cell, x) => {
       if (!cell.chosenTile){
         cell.chosenTile
@@ -494,7 +505,6 @@ async function main(input, output, dimensions, tile, gridSize) {
   let mainGrid //holds the grid object
   let success = false
   if (imgSize.w % tileSize != 0 || imgSize.h % tileSize != 0){
-    console.log("Invalid tile size")
     throw Error("Invalid tile size")
   }
   try {
@@ -515,9 +525,5 @@ async function main(input, output, dimensions, tile, gridSize) {
   console.log("Image generation complete!")
   return arrToImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize)
 }
-
-
-
-//main('./input/Dungeontileseroom.png', "bl", {width:160, height:192}, 16, 10)
 
 export default main
