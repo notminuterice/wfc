@@ -28,25 +28,26 @@ const upload = multer({storage: storage})
 
 app.post("/upload", upload.single("image"), async (req, res) => {
   const data = req.body
-  try {
-    if (!req.file) {
-      return res.status(400).send("No file uploaded");
-    }
-
-    console.log("File uploaded successfully");
-    //console.log(data)
-    const dimensions = sizeOf(`./input/${req.file.filename}`)
-    let outP = await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, parseInt(data.tileSize), parseInt(data.gridSize));
-    setTimeout(() => {
-      res.status(200).json({
-        message: "Image generation complete",
-        imgUrl: `http://localhost:8000/images/${outP}.png`
-      })
-    }, 500)
-  } catch (err) {
-    console.error("File upload error:", err);
-    res.status(500).send("An error occurred during the upload");
+  if (!req.file) {
+    return res.status(400).send("No file uploaded");
   }
+
+  console.log("File uploaded successfully");
+  const dimensions = sizeOf(`./input/${req.file.filename}`)
+  let outP
+  try {
+    outP = await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, parseInt(data.tileSize), parseInt(data.gridSize));
+  } catch (err) {
+    console.log(`Error during processing: ${err}`)
+    res.status(500).send(`PROCESSING ERROR ${err}`)
+    return
+  }
+  setTimeout(() => {
+    res.status(200).json({
+      message: "Image generation complete",
+      imgUrl: `http://localhost:8000/images/${outP}.png`
+    })
+  }, 500)
 })
 
 app.listen(port, () => {

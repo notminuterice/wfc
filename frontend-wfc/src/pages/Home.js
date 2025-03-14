@@ -35,18 +35,20 @@ function Home() {
     formData.append("outPath", outName)
     formData.append("tileSize", tileSize)
     formData.append("gridSize", gridSize)
-    try {
-      const res = await axios.post("http://localhost:8000/upload", formData, {
+    axios.post("http://localhost:8000/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+      }).then((res) => {
+        console.log(res.data.imgUrl)
+        setOutUrl(res.data.imgUrl)
+      }).catch((err) => {
+        if (err.response){
+          console.error("Error uploading image:", err.response.data);
+          alert(`Res status 500: An error occurred while uploading the image\n ${err.response.data}`);
+        } else {
+          alert(`Res status 500: An error occurred while uploading the image\n ${err}`)
+        }
       })
-      console.log(res.data.imgUrl)
-      setOutUrl(res.data.imgUrl)
-
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      alert("An error occurred while uploading the image.");
     }
-  }
 
   function nameChange(event) {
     setOutName(event.target.value)

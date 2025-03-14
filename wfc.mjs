@@ -500,13 +500,19 @@ async function main(input, output, dimensions, tile, gridSize) {
   } //dimensions of the image
   let img //loaded image
   let tileSet = {} //key: tile key, value: tile object
-  const tileSize = parseInt(tile) //size of each tile (e.g. 3x3)
+  let tileSize = null;
+  try{
+    tileSize = parseInt(tile) //size of each tile (e.g. 3x3)
+  } catch (err) {
+    throw Error("Invalid type for tile size")
+  }
   const pixelSize = 2
   let mainGrid //holds the grid object
   let success = false
-  if (imgSize.w % tileSize != 0 || imgSize.h % tileSize != 0){
-    throw Error("Invalid tile size")
-  }
+  if (dimensions.x != Math.floor(dimensions.x) || dimensions.y != Math.floor(dimensions.y)) throw Error("Incorrect output dimensions")
+  if (tileSize != Math.floor(tileSize)) throw Error("Invalid tile size")
+  if (imgSize.w % tileSize != 0 || imgSize.h % tileSize != 0) throw Error("Invalid tile size")
+  if (output.length == 0 || output == null) throw Error ("Invalid output")
   try {
     tileSet = await getPixelValues(input, tileSize, tileSet, imgSize)
   } catch (err){
