@@ -11,6 +11,7 @@ function Home() {
   const [imgPreview, setImgPreview] = useState()
   const [outUrl, setOutUrl] = useState()
   const [outName, setOutName] = useState()
+  const [gifUrl, setGifUrl] = useState()
   const [tileSize, setTileSize] = useState()
   const [gridSize, setGridSize] = useState()
 
@@ -34,6 +35,7 @@ function Home() {
       alert("No file selected")
       return
     }
+    setGifUrl(null)
 
     const formData = new FormData()
     formData.append("image", imgFile)
@@ -45,6 +47,8 @@ function Home() {
       }).then((res) => {
         console.log(res.data.imgUrl)
         setOutUrl(res.data.imgUrl)
+        setGifUrl(res.data.gifUrl)
+        console.log(gifUrl)
       }).catch((err) => {
         if (err.response){
           console.error("Error uploading image:", err.response.data);
@@ -101,8 +105,8 @@ function Home() {
         <Card>
           <h2 className={s.secondaryTitle}>Output</h2>
           <div className={s.imgWrapper}>
-            {outUrl ? (
-              <img src={outUrl} alt="forest" className={s.output} />
+            {gifUrl ? (
+              <img src={gifUrl} alt="forest" className={s.output} />
             ) : (
               <ImagePlaceholder/>
             )}

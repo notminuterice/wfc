@@ -13,7 +13,8 @@ const app = express()
 const port = 8000;
 
 app.use(cors({origin: ["http://localhost:3000"]}))
-app.use('/images', express.static(`${__dirname}/output`))
+app.use('/images', express.static(`${__dirname}/output/images`))
+app.use('/gifs', express.static(`${__dirname}/output/gifs`))
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -35,8 +36,11 @@ app.post("/upload", upload.single("image"), async (req, res) => {
   console.log("File uploaded successfully");
   const dimensions = sizeOf(`./input/${req.file.filename}`)
   let outP
+  let gifOutp
   try {
-    outP = await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, data.tileSize, data.gridSize);
+    let outputs = await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, data.tileSize, data.gridSize);
+    outP = outputs.outP
+    gifOutp = outputs.gifOutp
   } catch (err) {
     console.log(`Error during processing: ${err}`)
     res.status(500).send(`PROCESSING ERROR ${err}`)
@@ -45,7 +49,8 @@ app.post("/upload", upload.single("image"), async (req, res) => {
   setTimeout(() => {
     res.status(200).json({
       message: "Image generation complete",
-      imgUrl: `http://localhost:8000/images/${outP}.png`
+      imgUrl: `http://localhost:8000/images/${outP}.png`,
+      gifUrl: `http://localhost:8000/gifs/${gifOutp}.gif`
     })
   }, 500)
 })
