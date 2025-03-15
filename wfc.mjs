@@ -191,6 +191,7 @@ class Grid{
     this.outputPath = outputPath
     this.tileSize = tileSize
     this.gifEncoder = new GIFEncoder(gridSize * this.tileSize * this.pixelSize, gridSize * this.tileSize * this.pixelSize)
+    this.prevGrids = []
     this.maxFrames = maxFrames;
     this.initialiseGifEncoder()
     this.initialiseGrid()
@@ -226,14 +227,16 @@ class Grid{
     }
   }
 
-  generateFrame(frameData) {
-    let ctx = arrToImg(frameData, this.pixelSize).ctx
-    this.gifEncoder.addFrame(ctx)
-  }
-
-  finaliseGIF(frameData) {
-    let ctx = arrToImg(frameData, this.pixelSize).ctx
+  generateGIF() {
+    for (let i = 0; i < this.prevGrids.length; i += Math.ceil(this.prevGrids.length / this.maxFrames)) {
+      let frameData = gridToArray(this.prevGrids[i], this.tileSize, this.tileSet)
+      let ctx = arrToImg(frameData, this.pixelSize).ctx
+      console.log(i)
+      this.gifEncoder.addFrame(ctx)
+    }
+    let finalFrameData = gridToArray(this.prevGrids.at(-1), this.tileSize, this.tileSet)
     for (let i = 0; i < 20; i++){
+      let ctx = arrToImg(finalFrameData, this.pixelSize).ctx
       this.gifEncoder.addFrame(ctx)
     }
   }
@@ -248,12 +251,12 @@ class Grid{
   }
 
   //collapses and propagates a given cell
-  collapse(x, y){
+  collapse(x, y) {
     this.gridMatrix[y][x].collapse(); //runs the collapse function in the cell object at the specified coordinates
-    this.iterationCount++
-    if (this.iterationCount % Math.floor((this.gridSize**2)/this.maxFrames) == 0) {
-      this.generateFrame(gridToArray(this.gridMatrix, this.tileSize, this.tileSet))
+    if (this.iterationCount != this.collapsedCells.length) {
+      this.prevGrids.push(JSON.parse(JSON.stringify(this.gridMatrix)))
     }
+    this.iterationCount = this.collapsedCells.length
     this.propagate(x, y)
     //cancels if the collapsing or propagating fails
     if (this.failed){
@@ -568,7 +571,7 @@ async function main(input, output, dimensions, tile, gridSize) {
     }
   }
   console.log("Image generation complete!")
-  mainGrid.finaliseGIF(gridToArray(mainGrid.gridMatrix, tileSize, tileSet))
+  mainGrid.generateGIF()
   mainGrid.gifEncoder.finish()
   return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), newOut, pixelSize), "gifOutp": newOut }
 }
