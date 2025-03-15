@@ -36,7 +36,7 @@ app.post("/upload", upload.single("image"), async (req, res) => {
   const dimensions = sizeOf(`./input/${req.file.filename}`)
   let outP
   try {
-    outP = await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, parseInt(data.tileSize), parseInt(data.gridSize));
+    outP = await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, data.tileSize, data.gridSize);
   } catch (err) {
     console.log(`Error during processing: ${err}`)
     res.status(500).send(`PROCESSING ERROR ${err}`)

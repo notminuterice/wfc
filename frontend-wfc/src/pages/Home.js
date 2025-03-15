@@ -2,6 +2,10 @@ import React, {useState} from "react";
 import s from "./Home.module.css"
 import axios from "axios"
 import Grid from "../components/Grid";
+import Card from "../components/Card";
+import FormWrapper from "../components/FormWrapper";
+import ImagePlaceholder from "../components/ImagePlaceholder";
+import { saveAs } from "file-saver";
 function Home() {
   const [imgFile, setImgFile] = useState()
   const [imgPreview, setImgPreview] = useState()
@@ -11,17 +15,18 @@ function Home() {
   const [gridSize, setGridSize] = useState()
 
   function fileChange(event) {
-    let inputFile = event.target.files[0]
-    setImgFile(inputFile)
-    setImgPreview(URL.createObjectURL(inputFile))
-    //addFile()
+    if (event.target.files.length > 0) {
+      let inputFile = event.target.files[0]
+      setImgFile(inputFile)
+      setImgPreview(URL.createObjectURL(inputFile))
+    }
   }
 
   function tileSizeChange(event) {
-    setTileSize(event.target.value) 
+    setTileSize(event.target.value)
   }
   function gridSizeChange(event) {
-    setGridSize(event.target.value) 
+    setGridSize(event.target.value)
   }
 
   async function addFile() {
@@ -48,7 +53,11 @@ function Home() {
           alert(`Res status 500: An error occurred while uploading the image\n ${err}`)
         }
       })
-    }
+  }
+
+  function downloadFile() {
+    saveAs(outUrl, outName)
+  }
 
   function nameChange(event) {
     setOutName(event.target.value)
@@ -63,31 +72,45 @@ function Home() {
       </div>
 
       <div className={s.contentWrapper}>
-        <div className={s.inputWrapper}>
-          <h2>Input</h2>
+        <Card>
+          <h2 className={s.secondaryTitle}>Input</h2>
           <div className={s.imgWrapper}>
-            {/* <div className={s.grid}>
-              <Grid inputGridSize={inputGridSize}/>
-            </div> */}
-            <img src={imgPreview} alt="forest" className={s.input} />
+            {imgPreview ? (
+              <img src={imgPreview} alt="forest" className={s.input} />
+            ) : (
+              <ImagePlaceholder/>
+            )}
           </div>
-          <input type="file" accept="image/*" onChange={fileChange} />
+          <input type="file" accept="image/*" onChange={fileChange} className={s.inputFile} />
           <div className={s.input_vals}>
-            <input type="text" onChange={nameChange} placeholder="Output name"/>
-            <input type="number" onChange={tileSizeChange} placeholder="Tile size"/>
-            <input type="number" onChange={gridSizeChange} placeholder="Grid size"/>
-            <button onClick={addFile} className={s.beginbutton}>
-              Begin WFC
+            <FormWrapper name="Output Filename">
+              <input type="text" onChange={nameChange} className={s.inputForm} placeholder="filename"/>
+            </FormWrapper>
+            <FormWrapper  name="Tile Size">
+              <input type="number" onChange={tileSizeChange} className={s.inputForm} placeholder="0"/>
+            </FormWrapper>
+            <FormWrapper  name="Output Grid Size">
+              <input type="number" onChange={gridSizeChange} className={s.inputForm} placeholder="0"/>
+            </FormWrapper>
+            <button onClick={addFile} className={s.begin_button}>
+              BEGIN WFC
             </button>
           </div>
-        </div>
+        </Card>
 
-        <div className={s.outputWrapper}>
-          <h2>Output</h2>
+        <Card>
+          <h2 className={s.secondaryTitle}>Output</h2>
           <div className={s.imgWrapper}>
-            <img src={outUrl} alt="forest" className={s.output} />
+            {outUrl ? (
+              <img src={outUrl} alt="forest" className={s.output} />
+            ) : (
+              <ImagePlaceholder/>
+            )}
           </div>
-        </div>
+          <button onClick={downloadFile} className={s.download_button}>
+              DOWNLOAD
+          </button>
+        </Card>
       </div>
     </div>
   );

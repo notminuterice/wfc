@@ -4,6 +4,26 @@ body{
   display: flex;
   justify-content: center;
   align-items: center;
+  background-color: #a2d6c3;
+}
+
+.secondaryTitle{
+  display: flex;
+  justify-content: center;
+  color: #F4FAF7;
+}
+
+input[type=file] {
+  display: block;
+  font-style: oblique;
+  font-size: 15px;
+  margin-top: 2px;
+  font-family: 'Poppins', 'Arial', sans-serif;
+  color:#bfe7d5;
+  font-weight: 500;
+}
+.inputFile, input[type=file]::file-selector-button {
+  color: #093a28;
 }
 
 .main{
@@ -21,6 +41,7 @@ body{
   justify-content: center;
   align-items: center;
   gap: 20px;
+  color:#093a28;
 }
 
 .titleText{
@@ -30,16 +51,25 @@ body{
   text-transform: uppercase;
 }
 
+.inputForm{
+  background-color: #a2d6c3;
+  border: none;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.inputForm:focus{
+  border:solid;
+  border-width: 1px;
+  border-color: #093a28;
+  outline:none;
+}
+
 .output{
   height: 100%;
   width: 100%;
   object-fit:contain ;
   display:block;
-}
-
-.outputWrapper{
-  display:flex;
-  flex-direction: column;
 }
 
 .input{
@@ -60,7 +90,7 @@ body{
 .imgWrapper{
   height: 400px;
   width: 400px;
-  border: 1px solid black;
+  border: 2px solid #23684e;
   background-size: cover;
 }
 .input_vals{
@@ -68,6 +98,42 @@ body{
   flex-direction: column;
 }
 
-.beginbutton{
-  width: 100px;
+.begin_button {
+  background: linear-gradient(135deg, #dab76b, #9fdfb4);
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.2);
+  letter-spacing: 1px;
+  height: 40px;
+}
+
+.begin_button:hover {
+  background: linear-gradient(135deg, #ecb845, #8bcfa2);
+  transform: scale(1.05);
+  box-shadow: 4px 6px 15px rgba(0, 0, 0, 0.25);
+}
+
+.download_button{
+  background-color: #305c4c;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 20px;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.2);
+  letter-spacing: 1px;
+  height: 50px;
+}
+
+.download_button:hover {
+  background-color: #689e8b;
+  transform: scale(1.02);
+  box-shadow: 4px 6px 15px rgba(0, 0, 0, 0.25);
 }

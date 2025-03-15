@@ -1,0 +1,12 @@
+import React, {useState} from "react";
+import s from "./FormWrapper.module.css"
+function FormWrapper(props) {
+    return(
+        <div className={s.wrapper}>
+            <text className={s.formName}>{props.name}</text>
+            {props.children}
+        </div>
+    )
+}
+
+export default FormWrapper

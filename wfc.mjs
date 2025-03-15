@@ -37,7 +37,7 @@ class MinHeap{
     }
   }
 
-  /*runs through the heap from the top and swaps the parent with the smallest child 
+  /*runs through the heap from the top and swaps the parent with the smallest child
   if there is one smaller than the parent (only for removing)*/
   heapifyDown() {
     let i = 0
@@ -90,7 +90,7 @@ class MinHeap{
   }
 }
 
-/*a tile representing an nxn grid of pixel values in the ORIGINAL image. 
+/*a tile representing an nxn grid of pixel values in the ORIGINAL image.
 the top left pixel of a tile goes in each cell within the grid*/
 class Tile{
   constructor(grid, k, tileSize, imgSize){
@@ -182,11 +182,11 @@ class Grid{
     this.priorityQueue = new MinHeap([])  //priority queue (minimum heap) containing the cells/indexes in the grid
     this.complete = false                 //whether the collapse has finished
     this.tiles = tiles                    //all of the tiles from the original image
-    this.iterationCount = 0               //current iteration 
+    this.iterationCount = 0               //current iteration
     this.collapsedCells = []              //list of cells that have already been collapsed
     this.tileSet = tileSet                //the tileset object
     this.failed = false                   //whether the collapse has failed (no more possible cell options)
-    this.initialiseGrid()                     
+    this.initialiseGrid()
   }
 
   //Fills the grid with default state cells
@@ -334,7 +334,7 @@ function getPixelsT(startX, startY, size, pixelArr, imgSize) {
   //loops through the x and y coordinates within the tile, starting at the top left pixel of the tile
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const row = startY + y 
+      const row = startY + y
       const col = startX + x
       const i = (row * imgSize.w + col) * 4 //finds the corresponding index of the pixel in the pixel array
       block.push(
@@ -374,7 +374,7 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
           )
         }
        }
-      
+
       //loops through the tileset and creates adjacency rules for each one
       for (let i = 1; i <= Object.keys(tileSet).length; i++){
         tileSet[i].generateAdjacencyRules(Object.values(tileSet), i)
@@ -408,7 +408,7 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
         }
 
       }
-    
+
       //updates all of the keys (which identify the tiles) in the adjacency rules to the new keys in the flattened tileset
       for (let [t, tile] of Object.entries(flattenedTileset)){
         for (let [d, dir] of Object.entries(tile.adjacencyRules)){
@@ -499,20 +499,17 @@ async function main(input, output, dimensions, tile, gridSize) {
     h: dimensions.height
   } //dimensions of the image
   let img //loaded image
-  let tileSet = {} //key: tile key, value: tile object
-  let tileSize = null;
-  try{
-    tileSize = parseInt(tile) //size of each tile (e.g. 3x3)
-  } catch (err) {
-    throw Error("Invalid type for tile size")
-  }
+  let tileSet = {}; //key: tile key, value: tile object
+  let tileSize = parseInt(tile)
+  let intGridSize = parseInt(gridSize)
+  if(parseFloat(gridSize) != intGridSize) throw Error("Invalid grid size entered (must be a whole number)")
+  if (parseFloat(tile) != parseInt(tile)) throw Error("Invalid tile size entered (must be a whole number)")
   const pixelSize = 2
   let mainGrid //holds the grid object
   let success = false
-  if (dimensions.x != Math.floor(dimensions.x) || dimensions.y != Math.floor(dimensions.y)) throw Error("Incorrect output dimensions")
   if (tileSize != Math.floor(tileSize)) throw Error("Invalid tile size")
   if (imgSize.w % tileSize != 0 || imgSize.h % tileSize != 0) throw Error("Invalid tile size")
-  if (output.length == 0 || output == null) throw Error ("Invalid output")
+  if (output.length == 0 || output == null) throw Error("Invalid output directory")
   try {
     tileSet = await getPixelValues(input, tileSize, tileSet, imgSize)
   } catch (err){
@@ -522,7 +519,7 @@ async function main(input, output, dimensions, tile, gridSize) {
   console.log("Tileset generated!")
   while (tries < 100 && success == false){
     tries++
-    mainGrid = new Grid(gridSize, Object.keys(tileSet), tileSet)
+    mainGrid = new Grid(intGridSize, Object.keys(tileSet), tileSet)
     success = mainGrid.beginCollapse()
     if (success == false){
       console.log(`failed: iter ${tries}`)
