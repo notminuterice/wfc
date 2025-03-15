@@ -11,6 +11,7 @@ function Home() {
   const [imgPreview, setImgPreview] = useState()
   const [outUrl, setOutUrl] = useState()
   const [outName, setOutName] = useState()
+  const [generating, setGenerating] = useState(false)
   const [gifUrl, setGifUrl] = useState()
   const [tileSize, setTileSize] = useState()
   const [gridSize, setGridSize] = useState()
@@ -30,26 +31,31 @@ function Home() {
     setGridSize(event.target.value)
   }
 
+  //called when an image is added
   async function addFile() {
     if (!imgFile) {
       alert("No file selected")
       return
     }
-    setGifUrl(null)
 
+    setGifUrl(null)     //resets the output gif
+    setGenerating(true); //says that generation has begun
+
+    //adds all of the required data to the POST request
     const formData = new FormData()
     formData.append("image", imgFile)
     formData.append("outPath", outName)
     formData.append("tileSize", tileSize)
     formData.append("gridSize", gridSize)
+
+    //calls the backend API for a post request to send the image and required data for processing
     axios.post("http://localhost:8000/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       }).then((res) => {
-        console.log(res.data.imgUrl)
-        setOutUrl(res.data.imgUrl)
-        setGifUrl(res.data.gifUrl)
-        console.log(gifUrl)
+        setOutUrl(res.data.imgUrl)  //sets the image url to the value in the response
+        setGifUrl(res.data.gifUrl)  //sets the gif url to the value in the response
       }).catch((err) => {
+        //sends an alert if there is an error response
         if (err.response){
           console.error("Error uploading image:", err.response.data);
           alert(`Res status 500: An error occurred while uploading the image\n ${err.response.data}`);
@@ -71,30 +77,30 @@ function Home() {
     <div className={s.main}>
       <div className={s.title}>
         <img src="https://kopawz.neocities.org/indexgraphics/notfoundfolder/spinningfrog.gif" />
-        <h1 className={s.titleText}>WFC Image generator</h1>
+        <h1 className={s.title_text}>WFC Image generator</h1>
         <img src="https://kopawz.neocities.org/indexgraphics/notfoundfolder/spinningfrog.gif" />
       </div>
 
-      <div className={s.contentWrapper}>
+      <div className={s.content_wrapper}>
         <Card>
-          <h2 className={s.secondaryTitle}>Input</h2>
-          <div className={s.imgWrapper}>
+          <h2 className={s.secondary_title}>Input</h2>
+          <div className={s.img_wrapper}>
             {imgPreview ? (
               <img src={imgPreview} alt="forest" className={s.input} />
             ) : (
               <ImagePlaceholder/>
             )}
           </div>
-          <input type="file" accept="image/*" onChange={fileChange} className={s.inputFile} />
+          <input type="file" accept="image/*" onChange={fileChange} className={s.input_file} />
           <div className={s.input_vals}>
             <FormWrapper name="Output Filename">
-              <input type="text" onChange={nameChange} className={s.inputForm} placeholder="filename"/>
+              <input type="text" onChange={nameChange} className={s.input_form} placeholder="filename"/>
             </FormWrapper>
             <FormWrapper  name="Tile Size">
-              <input type="number" onChange={tileSizeChange} className={s.inputForm} placeholder="0"/>
+              <input type="number" onChange={tileSizeChange} className={s.input_form} placeholder="0"/>
             </FormWrapper>
             <FormWrapper  name="Output Grid Size">
-              <input type="number" onChange={gridSizeChange} className={s.inputForm} placeholder="0"/>
+              <input type="number" onChange={gridSizeChange} className={s.input_form} placeholder="0"/>
             </FormWrapper>
             <button onClick={addFile} className={s.begin_button}>
               BEGIN WFC
@@ -103,12 +109,12 @@ function Home() {
         </Card>
 
         <Card>
-          <h2 className={s.secondaryTitle}>Output</h2>
-          <div className={s.imgWrapper}>
+          <h2 className={s.secondary_title}>Output</h2>
+          <div className={s.img_wrapper}>
             {gifUrl ? (
               <img src={gifUrl} alt="forest" className={s.output} />
             ) : (
-              <ImagePlaceholder/>
+                <ImagePlaceholder isLoading={generating} />
             )}
           </div>
           <button onClick={downloadFile} className={s.download_button}>

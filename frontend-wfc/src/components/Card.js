@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React from "react";
 import s from "./Card.module.css"
 function Card(props) {
     return(

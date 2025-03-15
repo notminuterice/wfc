@@ -7,7 +7,7 @@ body{
   background-color: #a2d6c3;
 }
 
-.secondaryTitle{
+.secondary_title{
   display: flex;
   justify-content: center;
   color: #F4FAF7;
@@ -22,7 +22,7 @@ input[type=file] {
   color:#bfe7d5;
   font-weight: 500;
 }
-.inputFile, input[type=file]::file-selector-button {
+.input_file, input[type=file]::file-selector-button {
   color: #093a28;
 }
 
@@ -44,21 +44,21 @@ input[type=file] {
   color:#093a28;
 }
 
-.titleText{
+.title_text{
   font-size: 48px;
   font-weight: bold;
   text-align: center;
   text-transform: uppercase;
 }
 
-.inputForm{
+.input_form{
   background-color: #a2d6c3;
   border: none;
   height: 100%;
   border-radius: 3px;
 }
 
-.inputForm:focus{
+.input_form:focus{
   border:solid;
   border-width: 1px;
   border-color: #093a28;
@@ -78,7 +78,7 @@ input[type=file] {
   object-fit: contain;
 }
 
-.contentWrapper{
+.content_wrapper{
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -87,7 +87,7 @@ input[type=file] {
 }
 
 
-.imgWrapper{
+.img_wrapper{
   height: 400px;
   width: 400px;
   border: 2px solid #23684e;

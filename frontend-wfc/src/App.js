@@ -5,7 +5,7 @@ import Home from './pages/Home';
 
 function App() {
     return (
-      <Routes> {/* The Switch decides which component to show based on the current URL.*/}
+      <Routes>
         <Route path='/' element={<Home/>}></Route>
       </Routes>
     );
