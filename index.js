@@ -40,7 +40,7 @@ app.post("/upload", upload.single("image"), async (req, res) => {
   let outP
   let gifOutp
   try {
-    let outputs = await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, data.tileSize, data.gridSize);  //runs the WFC algorithm
+    const outputs = await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, data.tileSize, data.gridSize);  //runs the WFC algorithm
     outP = outputs.outP       //name of the image file
     gifOutp = outputs.gifOutp //name of the gif file
   } catch (err) {

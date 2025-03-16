@@ -18,7 +18,7 @@ function Home() {
 
   function fileChange(event) {
     if (event.target.files.length > 0) {
-      let inputFile = event.target.files[0]
+      const inputFile = event.target.files[0]
       setImgFile(inputFile)
       setImgPreview(URL.createObjectURL(inputFile))
     }
