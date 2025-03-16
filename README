@@ -32,8 +32,8 @@ If you use Yarn. This will install all of the necessary dependencies for the cod
 
 To run both the backend and frontend at once with a single terminal instance, run:
 
-```sh
-npm run dev
+```bash
+$ npm run dev
 ```
 
 This will start a concurrently command to run the backend and frontend at the same time
@@ -41,15 +41,15 @@ If you want to run them in seperate instances, follow these steps:
 
 1. open a new terminal instance and run
 
-```sh
-node index.js
+```bash
+$ node index.js
 ```
 
 2. open another terminal instance and run
 
-```sh
-cd frontend-wfc
-npm start
+```bash
+$ cd frontend-wfc
+$ npm start
 ```
 
 ## How to use
