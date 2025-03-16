@@ -7,5 +7,7 @@
     "**/*.js",
     "/Users/tomowilliams/.vscode/extensions/samplavigne.p5-vscode-1.2.16/p5types/global.d.ts",
     "wfc.mjs",
-    "index.js", "videoGen.mjs"]
+    "index.js",
+    "videoGen.mjs"
+  ]
 }

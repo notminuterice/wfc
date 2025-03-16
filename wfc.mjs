@@ -8,10 +8,6 @@ class MinHeap{
     this.arr = initialArr //array that holds the heap elements
   }
 
-  peek() {
-    return this.arr[0] //returns the root value of the heap
-  }
-
   //returns the index of parent index of the node inputted
   getParentIndex(i) {
     return Math.floor((i - 1) / 2)
@@ -177,11 +173,11 @@ class Cell{
 }
 
 class Grid{
-  constructor(gridSize, tiles, tileSet, pixelSize, outputPath, tileSize, maxFrames){
+  constructor(gridSize, tileKeys, tileSet, pixelSize, outputPath, tileSize, maxFrames){
     this.gridSize = gridSize                  //the size of the grid (same as the width and height)
     this.priorityQueue = new MinHeap([])      //priority queue (minimum heap) containing the cells/indexes in the grid
     this.complete = false                     //whether the collapse has finished
-    this.tiles = tiles                        //all of the tiles from the original image
+    this.tileKeys = tileKeys                        //all of the tile
     this.iterationCount = 0                   //current iteration
     this.collapsedCells = []                  //list of cells that have already been collapsed
     this.tileSet = tileSet                    //the tileset object
@@ -204,29 +200,6 @@ class Grid{
     this.gifEncoder.setRepeat(-1)   //doesn't loop
     this.gifEncoder.setDelay(30)    //set to 30 as if it is lower, it gets set to default frame rate which is too low
     this.gifEncoder.setQuality(20)  //lower number is better quality, but slower to create
-  }
-
-  //returns a grid full of default cells
-  initialiseGrid() {
-    let newGrid = []
-    for (let y = 0; y < this.gridSize; y++){
-      let row = []
-      for (let x = 0; x < this.gridSize; x++){
-        row.push(new Cell(x, y, this.tiles, this.gridSize, this.tileSet))
-      }
-      newGrid.push(row)
-    }
-    return newGrid
-  }
-
-  //maps the directions to the coordinate translations
-  getDirectionTile(direction){
-    switch (direction){
-      case "up": return [0, -1];
-      case "down": return [0, 1];
-      case "left": return [-1, 0];
-      case "right": return [1, 0]
-    }
   }
 
   //creates the gif showing progression of the collapsing
@@ -258,14 +231,37 @@ class Grid{
     this.gifEncoder.addFrame(ctx);  //adds an extra frame at the end in case the final grid output wasn't captured
   }
 
+  //returns a grid full of default cells
+  initialiseGrid() {
+    let newGrid = []
+    for (let y = 0; y < this.gridSize; y++){
+      let row = []
+      for (let x = 0; x < this.gridSize; x++){
+        row.push(new Cell(x, y, this.tileKeys, this.gridSize, this.tileSet))
+      }
+      newGrid.push(row)
+    }
+    return newGrid
+  }
+
+  //maps the directions to the coordinate translations
+  getDirectionTile(direction){
+    switch (direction){
+      case "up": return [0, -1];
+      case "down": return [0, 1];
+      case "left": return [-1, 0];
+      case "right": return [1, 0]
+    }
+  }
+
   //starts the collapse from coordinate 0,0 on the grid
   beginCollapse() {
     this.prevCollapses.push([0,0])
-    const outp = this.collapse(0, 0)
+    this.collapse(0, 0)
     if (this.failed == true){
       return false
     }
-    return outp //return the output if successful, otherwise return false
+    return true //return the true if successful, otherwise return false
   }
 
   //collapses and propagates a given cell
