@@ -161,7 +161,7 @@ class Cell{
   //selects a tile to assign to the cell out of the possible tiles (collapsing)
   collapse(){
     if (this.possibleTiles.length == 0){
-      throw new Error("OUT OF POSSIBILITIES")
+      throw RangeError("OUT OF POSSIBILITIES")
     }
 
     let weightedTiles = []
@@ -566,11 +566,11 @@ async function main(input, output, dimensions, tile, gridSize) {
   let success = false                     //checks whether the WFC suceeded or failed
 
   //error checks
-  if(parseFloat(gridSize) != intGridSize) throw Error("Invalid grid size entered (must be a whole number)")
-  if (parseFloat(tile) != parseInt(tile)) throw Error("Invalid tile size entered (must be a whole number)")
-  if (tileSize != Math.floor(tileSize)) throw Error("Invalid tile size")
-  if (imgSize.w % tileSize != 0 || imgSize.h % tileSize != 0) throw Error("Invalid tile size")
-  if (output.length == 0 || output == null) throw Error("Invalid output directory")
+  if(parseFloat(gridSize) != intGridSize) throw TypeError("Invalid grid size entered (must be a whole number)")
+  if (parseFloat(tile) != parseInt(tile)) throw TypeError("Invalid tile size entered (must be a whole number)")
+  if (tileSize != Math.floor(tileSize)) throw RangeError("Invalid tile size")
+  if (imgSize.w % tileSize != 0 || imgSize.h % tileSize != 0) throw RangeError("Invalid tile size")
+  if (output.length == 0 || output == null) throw ReferenceError("Invalid output directory")
 
   const newOut = appendPath(output); //adds a number to the filename if it already exists
 
@@ -589,7 +589,7 @@ async function main(input, output, dimensions, tile, gridSize) {
       console.log(`failed: iter ${tries}`)
     }
   }
-  if (tries == 50) throw Error("Generation failed. Try again with a lower output grid size")
+  if (tries == 50) throw RangeError("Generation failed. Try again with a lower output grid size")
 
   console.log("Image generation complete!")
   mainGrid.generateGIF()        //generates the gif

@@ -1,7 +1,6 @@
 import React, {useState} from "react";
 import s from "./Home.module.css"
 import axios from "axios"
-import Grid from "../components/Grid";
 import Card from "../components/Card";
 import FormWrapper from "../components/FormWrapper";
 import ImagePlaceholder from "../components/ImagePlaceholder";
