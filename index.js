@@ -5,8 +5,17 @@ import { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import sizeOf from "image-size"
 import wfc from "./wfc.mjs"
+import fs from "fs"
 
 const __dirname = dirname(fileURLToPath(import.meta.url)) //used for directory navigation
+const outputPath = "./output"
+if (!fs.existsSync(outputPath)) {
+  fs.mkdirSync(outputPath)
+  fs.mkdirSync(`${outputPath}/images`)
+  fs.mkdirSync(`${outputPath}/videos`)
+} else {
+  fsExtra.emptyDirSync(tempDir)
+}
 
 //initialisation of express and the port
 const app = express()
@@ -14,7 +23,7 @@ const port = 8000;
 
 app.use(cors({origin: ["http://localhost:3000"]}))                //enables server to be accessed from localhost
 app.use('/images', express.static(`${__dirname}/output/images`))  //lets the client access images using link routing
-app.use('/gifs', express.static(`${__dirname}/output/gifs`))      //lets the client access gifs using link routing
+app.use('/videos', express.static(`${__dirname}/output/videos`))      //lets the client access videos using link routing
 
 //sets up image link routing
 const storage = multer.diskStorage({
@@ -38,11 +47,11 @@ app.post("/upload", upload.single("image"), async (req, res) => {
   console.log("File uploaded successfully");
   const dimensions = sizeOf(`./input/${req.file.filename}`) //finds the pixel dimensions of the image
   let outP
-  let gifOutp
+  let videoOutp
   try {
     const outputs = await wfc(`./input/${req.file.filename}`, dimensions, data.tileSize, data.gridSize);  //runs the WFC algorithm
     outP = outputs.outP;       //name of the image file
-    gifOutp = outputs.gifOutp //name of the gif file
+    videoOutp = outputs.videoOutp //name of the video file
   } catch (err) {
     console.log(`Error during processing: ${err}`)
     res.status(500).send(`PROCESSING ERROR ${err}`)
@@ -50,15 +59,15 @@ app.post("/upload", upload.single("image"), async (req, res) => {
   }
   //returns the links after a delay to ensure they are fully piped into the respective files
   setTimeout(() => {
-    let gifUrl = null
-    if (gifOutp != null) {
-      gifUrl = `http://localhost:8000/gifs/${gifOutp}.gif`
+    let vidUrl = null
+    if (videoOutp != null) {
+      vidUrl = `http://localhost:8000/videos/${videoOutp}.mp4`
     }
     //sends back a success response containing required URLs
     res.status(200).json({
       message: "Image generation complete",
       imgUrl: `http://localhost:8000/images/${outP}.png`,
-      gifUrl: gifUrl
+      vidUrl: vidUrl
     })
   }, 500)
 })

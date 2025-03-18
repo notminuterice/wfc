@@ -1,7 +1,10 @@
 import getPixels from "get-pixels"
 import { createCanvas } from "canvas"
-import GIFEncoder from "gifencoder"
 import fs from "fs"
+import { spawn } from "child_process"
+import path from "path"
+import ffmpegPath from "ffmpeg-static"
+import fsExtra from "fs-extra"
 
 class MinHeap{
   constructor(initialArr) {
@@ -183,56 +186,10 @@ class Grid{
     this.tileSet = tileSet                    //the tileset object
     this.failed = false;                      //whether the collapse has failed (no more possible cell options)
     this.pixelSize = pixelSize                //the amount each pixel should be scaled up by
-    this.outputPath = outputPath              //output path to be used for saving the gif
     this.tileSize = tileSize                  //number of pixels in the width/height of each tile
-    this.gifEncoder = new GIFEncoder(gridSize * this.tileSize * this.pixelSize, gridSize * this.tileSize * this.pixelSize)  //encoder for making the GIF
     this.prevCollapses = []                   //coordinates for the tiles that have been collapsed (in order)
     this.maxFrames = maxFrames;               //maximum frames in the GIF
     this.gridMatrix = this.initialiseGrid()   //2D array containing one cell in each element (the output grid)
-    this.initialiseGifEncoder()
-  }
-
-  //sets up the gif encoder
-  initialiseGifEncoder() {
-    const writeStream = fs.createWriteStream(`./output/gifs/${this.outputPath}.gif`)
-    this.gifEncoder.createReadStream().pipe(writeStream)
-    this.gifEncoder.start()
-    this.gifEncoder.setRepeat(-1)   //doesn't loop
-    this.gifEncoder.setDelay(30)    //set to 30 as if it is lower, it gets set to default frame rate which is too low
-    this.gifEncoder.setQuality(20)  //lower number is better quality, but slower to create
-  }
-
-  //creates the gif showing progression of the collapsing
-  generateGIF(startTime, maxRuntime) {
-    //sets up the canvas to have coloured pixels added in processing
-    const canvas = createCanvas(this.gridSize * this.tileSize * this.pixelSize, this.gridSize * this.tileSize *  this.pixelSize)
-    const ctx = canvas.getContext("2d")
-
-    //sets the entire canvas to be black
-    ctx.fillStyle = "black"
-    ctx.fillRect(0, 0, this.gridSize*this.tileSize*this.pixelSize, this.gridSize*this.tileSize*this.pixelSize)
-
-    //runs through all of the tile collapses in order and adds them to the canvas
-    for (let i = 0; i < this.prevCollapses.length; i++){
-      if (Date.now() - startTime > maxRuntime) {
-        return false
-      }
-      const coords = this.prevCollapses[i]  //coordinates of the current cell collapse
-      const tileGrid = this.tileSet[this.gridMatrix[coords[1]][coords[0]].chosenTile].grid;  //colour values of the tile in the current cell
-      //draws the tile on the canvas in the correct position
-      for (let y = 0; y < tileGrid.length; y++) {
-        for (let x = 0; x < tileGrid[0].length; x++) {
-          ctx.fillStyle = tileGrid[y][x];
-          ctx.fillRect(coords[0] * this.tileSize * this.pixelSize + x * this.pixelSize, coords[1] * this.tileSize * this.pixelSize + y * this.pixelSize, this.pixelSize, this.pixelSize);
-        }
-      }
-      //adds a frame to the gif of the current canvas state every N collapses to ensure the gif is under the max number of frames
-      if (i % Math.ceil(this.prevCollapses.length / this.maxFrames) == 0) {
-        this.gifEncoder.addFrame(ctx);
-      }
-    }
-    this.gifEncoder.addFrame(ctx);  //adds an extra frame at the end in case the final grid output wasn't captured
-    return true
   }
 
   //returns a grid full of default cells
@@ -278,7 +235,7 @@ class Grid{
     this.propagate(x, y)
     //cancels if the collapsing or propagating fails
     if (this.failed){
-      console.log("failed")
+      console.error("collapse failed")
       return
     }
 
@@ -406,8 +363,8 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
   return new Promise((resolve, reject) => {
     getPixels(path, function(err, pixels) {
       if(err) {
-        console.log("Bad image path")
-        return
+        console.error("Bad image path")
+        throw Error("Bad image path")
       }
       const pixelVals = Array.from(pixels.data) //turns the rgba values of the pixels into an array
 
@@ -544,6 +501,109 @@ function gridToArray(g, tileSize, tileSet) {
   return default2dArray
 }
 
+function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
+  const gridSize = mainGrid.gridSize
+  const tileSize = mainGrid.tileSize
+  const pixelSize = mainGrid.pixelSize
+  const pixelWidth = gridSize * tileSize * pixelSize
+  const pixelHeight = gridSize * tileSize * pixelSize
+  const tempDir = "./tempFrames"
+
+  // Create temporary directory for frames if it doesn't exist
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir)
+  } else {
+    fsExtra.emptyDirSync(tempDir)
+  }
+
+  //Creates the canvas
+  const canvas = createCanvas(pixelWidth, pixelHeight)
+  const ctx = canvas.getContext("2d")
+
+  // Fills canvas background
+  ctx.fillStyle = "black"
+  ctx.fillRect(0, 0, pixelWidth, pixelHeight)
+
+  // Information on frames to ensure the number of frames stays below the maximum frame count
+  const frames = mainGrid.prevCollapses
+  const maxFrames = mainGrid.maxFrames
+  const frameInterval = Math.ceil(frames.length / maxFrames)
+
+  // Loop over each previous collapse and draw the frame
+  for (let i = 0; i < frames.length; i++) {
+    //ends video generation if it takes too long
+    if (Date.now() - startTime > maxRuntime) {
+      console.error("Runtime exceeded during video generation")
+      throw Error("Runtime exceeded during video generation")
+    }
+    const coords = frames[i]
+    const cell = mainGrid.gridMatrix[coords[1]][coords[0]]
+    const k = cell.chosenTile
+    if (!k) continue; // skip if no tile selected
+
+    const tileGrid = mainGrid.tileSet[k].grid
+
+    // Draw the tile on the canvas at the correct position
+    for (let y = 0; y < tileGrid.length; y++) {
+      for (let x = 0; x < tileGrid[0].length; x++) {
+        ctx.fillStyle = tileGrid[y][x];
+        ctx.fillRect(
+          coords[0] * tileSize * pixelSize + x * pixelSize,
+          coords[1] * tileSize * pixelSize + y * pixelSize,
+          pixelSize,
+          pixelSize
+        );
+      }
+    }
+
+    // Write a frame to a file every time frameInterval number of collapses have happened
+    if (i % frameInterval === 0) {
+      const frameIndex = Math.floor(i / frameInterval)
+      const fileName = `${tempDir}/frame${frameIndex.toString()}.png`
+      const buffer = canvas.toBuffer("image/png")
+      fs.writeFileSync(fileName, buffer)
+    }
+  }
+
+  // Save final frame (in case it wasn’t captured)
+  const finalFrameName =  `${tempDir}/frame${frames.length.toString()}.png`
+  const finalBuffer = canvas.toBuffer("image/png")
+  fs.writeFileSync(finalFrameName, finalBuffer)
+
+  const ffmpegArgs = [
+    "-y",                                     //overrides output files
+    "-loglevel", "quiet",                     //stops it from outputting excess logs
+    "-framerate", "30",                       //sets framerate to 30
+    "-i", path.join(tempDir, "frame%d.png"),  //files to be read
+    "-c:v", "libx264",                        //encoding codec - H.264 format
+    "-pix_fmt", "yuv420p",                    //pixel format - most common one
+    `./output/videos/${outputPath}.mp4`       //output path
+  ];
+
+  const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs)
+
+  ffmpegProcess.on('error', (err) => {
+    // catches execution error (bad file)
+    console.log(`Error: ${err}`)
+  })
+
+  ffmpegProcess.stdout.on('data', (data) => {
+      console.log(data.toString())
+  })
+
+  ffmpegProcess.stderr.on('data', (data) => {
+      console.log(data.toString())
+  })
+
+  ffmpegProcess.on('close', (code) => {
+      console.log(`Process exited with code: ${code}`);
+      if (code === 0) {
+          console.log(`FFmpeg finished successfully`);
+      } else {
+          console.log(`FFmpeg ran into an error`);
+      }
+  })
+}
 
 async function main(input, dimensions, tile, gridSize) {
   let tries = 0                           //number of times the collapse has been tried and has failed
@@ -578,7 +638,7 @@ async function main(input, dimensions, tile, gridSize) {
   //keeps running the algorithm until a full successful collapse or 50 tries has been exceeded
   while (tries < 50 && success == false) {
     if (Date.now() - startTime > maxRuntime) {
-      throw Error("Generation took too long")
+      throw Error("Runtime exceeded during collapse")
     }
     tries++
     mainGrid = new Grid(intGridSize, Object.keys(tileSet), tileSet, pixelSize, output, tileSize, maxFrames) //resets the grid
@@ -590,14 +650,14 @@ async function main(input, dimensions, tile, gridSize) {
   if (tries == 50) throw RangeError("Generation failed. Try again with a lower output grid size")
 
   console.log("Image generation complete!")
-  const gifGenerated = mainGrid.generateGIF(startTime, maxRuntime);        //generates the gif
-  if (gifGenerated) {
-    mainGrid.gifEncoder.finish()  //finishes the gif encoding and saves it
-    return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize), "gifOutp": output }
-  } else {
-    mainGrid.gifEncoder.finish()
-    return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize), "gifOutp": null }
+  try {
+    generateVideo(mainGrid, startTime, maxRuntime, output);
+    return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize), "videoOutp": output }
+  } catch (err){
+    console.error(`video generation error: ${err}`)
+    return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize), "videoOutp": null }
   }
+
 }
 
 export default main

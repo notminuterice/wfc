@@ -12,7 +12,7 @@ function Home() {
   const imgFileRef = useRef(null);
   const [outUrl, setOutUrl] = useState()
   const [generating, setGenerating] = useState(false)
-  const [gifUrl, setGifUrl] = useState()
+  const [vidUrl, setVidUrl] = useState()
   const [tileSize, setTileSize] = useState()
   const [gridSize, setGridSize] = useState()
 
@@ -39,12 +39,12 @@ function Home() {
       return
     }
 
-    // if (generating) {
-    //   alert("Currently generating image. Please wait until this one is finished")
-    //   return
-    // }
+    if (generating) {
+      alert("Currently generating image. Please wait until this one is finished")
+      return
+    }
 
-    setGifUrl(null)     //resets the output gif
+    setVidUrl(null)     //resets the output gif
     setGenerating(true); //says that generation has begun
 
     //adds all of the required data to the POST request
@@ -58,11 +58,11 @@ function Home() {
         headers: { "Content-Type": "multipart/form-data" },
       }).then((res) => {
         setOutUrl(res.data.imgUrl);  //sets the image url to the value in the response
-        if (!res.data.gifUrl) {
-          alert("Gif generation timed out. Displaying image instead")
-          setGifUrl(res.data.imgUrl);
+        if (!res.data.vidUrl) {
+          alert("Video generation timed out. Displaying image instead")
+          setVidUrl(null);
         } else {
-          setGifUrl(res.data.gifUrl);  //sets the gif url to the value in the response
+          setVidUrl(res.data.vidUrl);  //sets the gif url to the value in the response
         }
         setGenerating(false)
       }).catch((err) => {
@@ -134,8 +134,8 @@ function Home() {
         <Card>
           <h2 className={s.secondary_title}>Output</h2>
           <div className={s.img_wrapper}>
-            {gifUrl ? (
-              <img src={gifUrl} alt="forest" className={s.output} />
+            {vidUrl ? (
+              <video src={vidUrl} alt="forest" className={s.output} autoPlay={true} />
             ) : (
                 <ImagePlaceholder isLoading={generating} />
             )}
