@@ -111,27 +111,23 @@ class Tile{
   }
 
   //constructs the adjacencyRules object based on information gathered in the image
-  generateAdjacencyRules(otherTiles, position){
-    const i = position - 1                  //the index of the tile in the image
-    const w = this.imgSize.w/this.tileSize  //the width of the image
-    const aboveIndex = i - w  //index of the tile above (subtract the width from the index to go up one row)
-    const belowIndex = i + w  //index of the tile below (add the width to the index to go down one row)
-    const leftIndex = i - 1   //index of the tile to the left (subtract one from the index to go left one)
-    const rightIndex = i + 1  //index of the tile to the right (add one to the index to go right one)
-
-    if (leftIndex >= 0){  //checks if the left index is higher than the lower index boundary
-      this.adjacencyRules.left.push(otherTiles[leftIndex].k.toString())
+  generateAdjacencyRules(otherTiles, position, columns){
+    const i = position - 1  //the index of the tile in the image
+    const row = Math.floor(i / columns)
+    const col = i % columns
+    const totalRows = Math.floor(otherTiles.length / columns)
+    if (row > 0){               // check if not on first row
+      this.adjacencyRules.up.push(otherTiles[i - columns].k.toString())
     }
-    if (rightIndex <= otherTiles.length-1){   //checks if the right index is lower than the higher index boundary
-      this.adjacencyRules.right.push(otherTiles[rightIndex].k.toString())
+    if (row < totalRows - 1){   //check if not on last row
+      this.adjacencyRules.down.push(otherTiles[i + columns].k.toString())
     }
-    if (aboveIndex >= 0){ //checks the above index is higher than the lower index boundary
-      this.adjacencyRules.up.push(otherTiles[aboveIndex].k.toString())
+    if (col > 0){               // check if not in first column
+      this.adjacencyRules.left.push(otherTiles[i - 1].k.toString())
     }
-    if (belowIndex < otherTiles.length){  //checks if the below index is lower than the higher index boundary
-      this.adjacencyRules.down.push(otherTiles[belowIndex].k.toString())
+    if (col < columns - 1){     //check if not in last column
+      this.adjacencyRules.right.push(otherTiles[i + 1].k.toString())
     }
-
   }
 }
 
@@ -180,15 +176,15 @@ class Grid{
     this.gridSize = gridSize                  //the size of the grid (same as the width and height)
     this.priorityQueue = new MinHeap([])      //priority queue (minimum heap) containing the cells/indexes in the grid
     this.complete = false                     //whether the collapse has finished
-    this.tileKeys = tileKeys                        //all of the tile
+    this.tileKeys = tileKeys                  //all of the tile keys
     this.iterationCount = 0                   //current iteration
     this.collapsedCells = []                  //list of cells that have already been collapsed
     this.tileSet = tileSet                    //the tileset object
-    this.failed = false;                      //whether the collapse has failed (no more possible cell options)
+    this.failed = false                       //whether the collapse has failed (no more possible cell options)
     this.pixelSize = pixelSize                //the amount each pixel should be scaled up by
     this.tileSize = tileSize                  //number of pixels in the width/height of each tile
     this.prevCollapses = []                   //coordinates for the tiles that have been collapsed (in order)
-    this.maxFrames = maxFrames;               //maximum frames in the GIF
+    this.maxFrames = maxFrames                //maximum frames in the GIF
     this.gridMatrix = this.initialiseGrid()   //2D array containing one cell in each element (the output grid)
   }
 
@@ -227,7 +223,7 @@ class Grid{
 
   //collapses and propagates a given cell
   collapse(x, y) {
-    this.gridMatrix[y][x].collapse(); //runs the collapse function in the cell object at the specified coordinates
+    this.gridMatrix[y][x].collapse() //runs the collapse function in the cell object at the coordinates
     if (this.iterationCount != this.collapsedCells.length) {
       this.prevCollapses.push([x, y]) //records the collapse if a new cell has been collapsed
     }
@@ -358,7 +354,7 @@ function getPixelsT(startX, startY, size, pixelArr, imgSize) {
   return block
 }
 
-//gets all pixel colour values from the img and creates tiles from them
+//gets all pixel colour values from the img and creates tiles from them. Excludes outer ring of tiles for continuity
 async function getPixelValues(path, tileSize, tileSet, imgSize){
   return new Promise((resolve, reject) => {
     getPixels(path, function(err, pixels) {
@@ -369,8 +365,8 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
       const pixelVals = Array.from(pixels.data) //turns the rgba values of the pixels into an array
 
       //loops through the input image and creates tiles at regular intervals based on the tile size (will have duplicate tiles)
-      for (let y = 0; y < imgSize.h; y += tileSize) {
-        for (let x = 0; x < imgSize.w; x += tileSize) {
+      for (let y = tileSize; y < imgSize.h - tileSize; y += tileSize) {
+        for (let x = tileSize; x < imgSize.w - tileSize; x += tileSize) {
           const tileKey = (Object.keys(tileSet).length+1).toString() //k value of the tile
           //creates a new tile based on the pixels in the position of the tile
           tileSet[tileKey] = new Tile(
@@ -385,9 +381,10 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
         }
        }
 
+      const innerColumns = Math.floor(imgSize.w / tileSize) - 2 //excludes end tiles
       //loops through the tileset and creates adjacency rules for each one
       for (let i = 1; i <= Object.keys(tileSet).length; i++){
-        tileSet[i].generateAdjacencyRules(Object.values(tileSet), i)
+        tileSet[i].generateAdjacencyRules(Object.values(tileSet), i, innerColumns)
       }
 
       let flattenedTileset = {} //object which will hold the tileset with no repetitions
@@ -509,27 +506,27 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
   const pixelHeight = gridSize * tileSize * pixelSize
   const tempDir = "./tempFrames"
 
-  // Create temporary directory for frames if it doesn't exist
+  //create temporary directory for frames if it doesn't exist
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir)
   } else {
     fsExtra.emptyDirSync(tempDir)
   }
 
-  //Creates the canvas
+  //creates the canvas
   const canvas = createCanvas(pixelWidth, pixelHeight)
   const ctx = canvas.getContext("2d")
 
-  // Fills canvas background
+  //fills canvas background
   ctx.fillStyle = "black"
   ctx.fillRect(0, 0, pixelWidth, pixelHeight)
 
-  // Information on frames to ensure the number of frames stays below the maximum frame count
+  //information on frames
   const frames = mainGrid.prevCollapses
   const maxFrames = mainGrid.maxFrames
   const frameInterval = Math.ceil(frames.length / maxFrames)
 
-  // Loop over each previous collapse and draw the frame
+  //loop over each previous collapse and draw the frame
   for (let i = 0; i < frames.length; i++) {
     //ends video generation if it takes too long
     if (Date.now() - startTime > maxRuntime) {
@@ -539,11 +536,11 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
     const coords = frames[i]
     const cell = mainGrid.gridMatrix[coords[1]][coords[0]]
     const k = cell.chosenTile
-    if (!k) continue; // skip if no tile selected
+    if (!k) continue // skip if no tile selected
 
     const tileGrid = mainGrid.tileSet[k].grid
 
-    // Draw the tile on the canvas at the correct position
+    //draw the tile on the canvas at the correct position
     for (let y = 0; y < tileGrid.length; y++) {
       for (let x = 0; x < tileGrid[0].length; x++) {
         ctx.fillStyle = tileGrid[y][x];
@@ -552,11 +549,11 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
           coords[1] * tileSize * pixelSize + y * pixelSize,
           pixelSize,
           pixelSize
-        );
+        )
       }
     }
 
-    // Write a frame to a file every time frameInterval number of collapses have happened
+    //write a frame to a file every time frameInterval number of collapses have happened
     if (i % frameInterval === 0) {
       const frameIndex = Math.floor(i / frameInterval)
       const fileName = `${tempDir}/frame${frameIndex.toString()}.png`
@@ -565,7 +562,7 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
     }
   }
 
-  // Save final frame (in case it wasn’t captured)
+  //save final frame just in case it wasnt captured
   const finalFrameName =  `${tempDir}/frame${Math.ceil(frames.length / frameInterval).toString()}.png`
   const finalBuffer = canvas.toBuffer("image/png")
   fs.writeFileSync(finalFrameName, finalBuffer)
@@ -578,12 +575,12 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
     "-c:v", "libx264",                        //encoding codec - H.264 format
     "-pix_fmt", "yuv420p",                    //pixel format - most common one
     `./output/videos/${outputPath}.mp4`       //output path
-  ];
+  ]
 
   const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs)
 
   ffmpegProcess.on('error', (err) => {
-    // catches execution error (bad file)
+    //catches execution error (bad file)
     console.log(`Error: ${err}`)
   })
 
@@ -596,11 +593,11 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
   })
 
   ffmpegProcess.on('close', (code) => {
-      console.log(`Process exited with code: ${code}`);
+      console.log(`Process exited with code: ${code}`)
       if (code === 0) {
-          console.log(`FFmpeg finished successfully`);
+          console.log(`FFmpeg finished successfully`)
       } else {
-          console.log(`FFmpeg ran into an error`);
+          console.log(`FFmpeg ran into an error`)
       }
   })
 }
@@ -610,13 +607,13 @@ async function main(input, dimensions, tile, gridSize) {
   const imgSize = {                       //dimensions of the image
     w: dimensions.width,
     h: dimensions.height
-  };
-  const maxFrames = 100;
-  const startTime = Date.now()
-  const maxRuntime = 60000
-  let tileSet = {};                       //key: tile key, value: tile object
-  const tileSize = parseInt(tile)           //size of the tile (integer value)
-  const intGridSize = parseInt(gridSize);   //size of the grid (integer value)
+  }
+  const maxFrames = 100                   //maximum number of frames in the video
+  const startTime = Date.now()            //time at start of collapse
+  const maxRuntime = 60000                //maximum time in ms before failure
+  let tileSet = {}                        //key: tile key, value: tile object
+  const tileSize = parseInt(tile)         //size of the tile (integer value)
+  const intGridSize = parseInt(gridSize)  //size of the grid (integer value)
   const pixelSize = 2                     //how much the pixels should be scaled
   let mainGrid                            //holds the grid object
   let success = false                     //checks whether the WFC suceeded or failed
@@ -650,12 +647,13 @@ async function main(input, dimensions, tile, gridSize) {
   if (tries == 50) throw RangeError("Generation failed. Try again with a lower output grid size")
 
   console.log("Image generation complete!")
+
   try {
-    generateVideo(mainGrid, startTime, maxRuntime, output);
+    generateVideo(mainGrid, startTime, maxRuntime, output)  //creates a video from the temporary tiles
     return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize), "videoOutp": output }
   } catch (err){
     console.error(`video generation error: ${err}`)
-    return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize), "videoOutp": null }
+    return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize), "videoOutp": null }   //doesn't add the video path if not generated
   }
 
 }

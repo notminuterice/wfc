@@ -73,14 +73,23 @@ function Home() {
         } else {
           alert(`Res status 500: An error occurred while uploading the image\n ${err}`)
         }
+        setGenerating(false)
       })
   }
 
-  function downloadFile() {
+  function downloadImg() {
     if (outUrl) {
       saveAs(outUrl, "output")
     } else {
       alert("No image generated")
+    }
+  }
+
+  function downloadVideo() {
+    if (vidUrl) {
+      saveAs(vidUrl, "output")
+    } else {
+      alert("No video generated")
     }
   }
 
@@ -140,8 +149,11 @@ function Home() {
                 <ImagePlaceholder isLoading={generating} />
             )}
           </div>
-          <button onClick={downloadFile} className={s.download_button}>
+          <button onClick={downloadImg} className={s.download_button}>
               DOWNLOAD
+          </button>
+          <button onClick={downloadVideo} className={s.download_button}>
+              DOWNLOAD VIDEO
           </button>
         </Card>
       </div>
