@@ -114,7 +114,14 @@ input[type=file] {
 
 .begin_button:hover {
   background: linear-gradient(135deg, #ecb845, #8bcfa2);
-  transform: scale(1.05);
+  transform: scale(1.03);
+  box-shadow: 4px 6px 15px rgba(0, 0, 0, 0.25);
+}
+
+.begin_button:active {
+  background: linear-gradient(135deg, #e7c16f, #a9ccb5);
+  transform: translateY(2px);
+  transition: all 0.1s ease-in-out;
   box-shadow: 4px 6px 15px rgba(0, 0, 0, 0.25);
 }
 
@@ -135,5 +142,12 @@ input[type=file] {
 .download_button:hover {
   background-color: #689e8b;
   transform: scale(1.02);
+  box-shadow: 4px 6px 15px rgba(0, 0, 0, 0.25);
+}
+
+.download_button:active {
+  background-color: #79a394;
+  transform: translateY(2px);
+  transition: all 0.1s ease-in-out;
   box-shadow: 4px 6px 15px rgba(0, 0, 0, 0.25);
 }

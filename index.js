@@ -40,8 +40,8 @@ app.post("/upload", upload.single("image"), async (req, res) => {
   let outP
   let gifOutp
   try {
-    const outputs = await wfc(`./input/${req.file.filename}`, data.outPath, dimensions, data.tileSize, data.gridSize);  //runs the WFC algorithm
-    outP = outputs.outP       //name of the image file
+    const outputs = await wfc(`./input/${req.file.filename}`, dimensions, data.tileSize, data.gridSize);  //runs the WFC algorithm
+    outP = outputs.outP;       //name of the image file
     gifOutp = outputs.gifOutp //name of the gif file
   } catch (err) {
     console.log(`Error during processing: ${err}`)
@@ -50,11 +50,15 @@ app.post("/upload", upload.single("image"), async (req, res) => {
   }
   //returns the links after a delay to ensure they are fully piped into the respective files
   setTimeout(() => {
+    let gifUrl = null
+    if (gifOutp != null) {
+      gifUrl = `http://localhost:8000/gifs/${gifOutp}.gif`
+    }
     //sends back a success response containing required URLs
     res.status(200).json({
       message: "Image generation complete",
       imgUrl: `http://localhost:8000/images/${outP}.png`,
-      gifUrl: `http://localhost:8000/gifs/${gifOutp}.gif`
+      gifUrl: gifUrl
     })
   }, 500)
 })

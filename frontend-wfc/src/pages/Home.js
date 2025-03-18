@@ -9,7 +9,6 @@ function Home() {
   const [imgFile, setImgFile] = useState()
   const [imgPreview, setImgPreview] = useState()
   const [outUrl, setOutUrl] = useState()
-  const [outName, setOutName] = useState()
   const [generating, setGenerating] = useState(false)
   const [gifUrl, setGifUrl] = useState()
   const [tileSize, setTileSize] = useState()
@@ -37,13 +36,17 @@ function Home() {
       return
     }
 
+    // if (generating) {
+    //   alert("Currently generating image. Please wait until this one is finished")
+    //   return
+    // }
+
     setGifUrl(null)     //resets the output gif
     setGenerating(true); //says that generation has begun
 
     //adds all of the required data to the POST request
     const formData = new FormData()
     formData.append("image", imgFile)
-    formData.append("outPath", outName)
     formData.append("tileSize", tileSize)
     formData.append("gridSize", gridSize)
 
@@ -51,8 +54,14 @@ function Home() {
     axios.post("http://localhost:8000/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       }).then((res) => {
-        setOutUrl(res.data.imgUrl)  //sets the image url to the value in the response
-        setGifUrl(res.data.gifUrl)  //sets the gif url to the value in the response
+        setOutUrl(res.data.imgUrl);  //sets the image url to the value in the response
+        if (!res.data.gifUrl) {
+          alert("Gif generation timed out. Displaying image instead")
+          setGifUrl(res.data.imgUrl);
+        } else {
+          setGifUrl(res.data.gifUrl);  //sets the gif url to the value in the response
+        }
+        setGenerating(false)
       }).catch((err) => {
         //sends an alert if there is an error response
         if (err.response){
@@ -65,11 +74,18 @@ function Home() {
   }
 
   function downloadFile() {
-    saveAs(outUrl, outName)
+    saveAs(outUrl, "output")
   }
 
-  function nameChange(event) {
-    setOutName(event.target.value)
+  function enforceRange(min, max, e) {
+    const val = e.target.value
+    if (val != "") {
+      if (parseInt(val) < min) {
+        e.target.value = min
+      } else if (parseInt(val) > max) {
+        e.target.value = max
+      }
+    }
   }
 
   return (
@@ -92,14 +108,11 @@ function Home() {
           </div>
           <input type="file" accept="image/*" onChange={fileChange} className={s.input_file} />
           <div className={s.input_vals}>
-            <FormWrapper name="Output Filename">
-              <input type="text" onChange={nameChange} className={s.input_form} placeholder="filename"/>
-            </FormWrapper>
             <FormWrapper  name="Tile Size">
-              <input type="number" onChange={tileSizeChange} className={s.input_form} placeholder="0"/>
+              <input type="number" onChange={tileSizeChange} className={s.input_form} onKeyUp={(e) => { enforceRange(1, 64, e) }} placeholder="1-64"/>
             </FormWrapper>
-            <FormWrapper  name="Output Grid Size">
-              <input type="number" onChange={gridSizeChange} className={s.input_form} placeholder="0"/>
+            <FormWrapper  name="Output Grid Size (Tiles)">
+              <input type="number" onChange={gridSizeChange} className={s.input_form} onKeyUp={(e) => { enforceRange(1, 50, e); }} placeholder="1-50" />
             </FormWrapper>
             <button onClick={addFile} className={s.begin_button}>
               BEGIN WFC

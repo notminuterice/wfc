@@ -203,7 +203,7 @@ class Grid{
   }
 
   //creates the gif showing progression of the collapsing
-  generateGIF() {
+  generateGIF(startTime, maxRuntime) {
     //sets up the canvas to have coloured pixels added in processing
     const canvas = createCanvas(this.gridSize * this.tileSize * this.pixelSize, this.gridSize * this.tileSize *  this.pixelSize)
     const ctx = canvas.getContext("2d")
@@ -214,6 +214,9 @@ class Grid{
 
     //runs through all of the tile collapses in order and adds them to the canvas
     for (let i = 0; i < this.prevCollapses.length; i++){
+      if (Date.now() - startTime > maxRuntime) {
+        return false
+      }
       const coords = this.prevCollapses[i]  //coordinates of the current cell collapse
       const tileGrid = this.tileSet[this.gridMatrix[coords[1]][coords[0]].chosenTile].grid;  //colour values of the tile in the current cell
       //draws the tile on the canvas in the correct position
@@ -229,6 +232,7 @@ class Grid{
       }
     }
     this.gifEncoder.addFrame(ctx);  //adds an extra frame at the end in case the final grid output wasn't captured
+    return true
   }
 
   //returns a grid full of default cells
@@ -471,21 +475,14 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
     })
   })
 }
-//changes the name of the file if the filename already exists
-function appendPath(path) {
-  while (fs.existsSync(`./output/images/${path}.png`)){
-    //splits the filename to find out if there is a duplicate (it will have brackets with a number if it is a dupe)
-    let splOut = path.split("(")
-    if (splOut.length >= 2){                                      //if there is a bracket
-      let num = parseInt(splOut.at(-1).split(")"))                //parses the number in the brackets
-      splOut[splOut.length-1] = "(" + (num + 1).toString() + ")"  //adds one to the number and puts it back in brackets
-      path = splOut.join("")                                      //joins the two values together to reconstruct the filename
-    } else {
-      path = path + "(1)" //sets the default number to one if it has not already been duplicated
-    }
-  }
-  return path
+
+function createPath() {
+  const files = fs.readdirSync("./output/images/").map(n => parseInt(n.split(".")[0]))
+    .sort((a, b) => b - a)
+  if (files.length == 0) return "1"
+  return (files[0] + 1).toString()
 }
+
 
 //turns the output array back into an image and saves it
 function arrToImg(imgData, pixelSize) {
@@ -547,13 +544,16 @@ function gridToArray(g, tileSize, tileSet) {
   return default2dArray
 }
 
-async function main(input, output, dimensions, tile, gridSize) {
+
+async function main(input, dimensions, tile, gridSize) {
   let tries = 0                           //number of times the collapse has been tried and has failed
   const imgSize = {                       //dimensions of the image
     w: dimensions.width,
     h: dimensions.height
   };
   const maxFrames = 100;
+  const startTime = Date.now()
+  const maxRuntime = 60000
   let tileSet = {};                       //key: tile key, value: tile object
   const tileSize = parseInt(tile)           //size of the tile (integer value)
   const intGridSize = parseInt(gridSize);   //size of the grid (integer value)
@@ -566,20 +566,22 @@ async function main(input, output, dimensions, tile, gridSize) {
   if (parseFloat(tile) != parseInt(tile)) throw TypeError("Invalid tile size entered (must be a whole number)")
   if (tileSize != Math.floor(tileSize)) throw RangeError("Invalid tile size")
   if (imgSize.w % tileSize != 0 || imgSize.h % tileSize != 0) throw RangeError("Invalid tile size")
-  if (output.length == 0 || output == null) throw ReferenceError("Invalid output directory")
 
-  const newOut = appendPath(output); //adds a number to the filename if it already exists
+  const output = createPath()
 
   try {
-    tileSet = await getPixelValues(input, tileSize, tileSet, imgSize, pixelSize, newOut, tileSize, maxFrames) //creates the tile set from the input image
+    tileSet = await getPixelValues(input, tileSize, tileSet, imgSize, pixelSize, output, tileSize, maxFrames) //creates the tile set from the input image
   } catch (err) {
     throw Error("Tileset generation failed")
   }
   console.log("Tileset generated!")
   //keeps running the algorithm until a full successful collapse or 50 tries has been exceeded
-  while (tries < 50 && success == false){
+  while (tries < 50 && success == false) {
+    if (Date.now() - startTime > maxRuntime) {
+      throw Error("Generation took too long")
+    }
     tries++
-    mainGrid = new Grid(intGridSize, Object.keys(tileSet), tileSet, pixelSize, newOut, tileSize, maxFrames) //resets the grid
+    mainGrid = new Grid(intGridSize, Object.keys(tileSet), tileSet, pixelSize, output, tileSize, maxFrames) //resets the grid
     success = mainGrid.beginCollapse()  //starts the collapse algorithm
     if (success == false){
       console.log(`failed: iter ${tries}`)
@@ -588,9 +590,14 @@ async function main(input, output, dimensions, tile, gridSize) {
   if (tries == 50) throw RangeError("Generation failed. Try again with a lower output grid size")
 
   console.log("Image generation complete!")
-  mainGrid.generateGIF()        //generates the gif
-  mainGrid.gifEncoder.finish()  //finishes the gif encoding and saves it
-  return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), newOut, pixelSize), "gifOutp": newOut }
+  const gifGenerated = mainGrid.generateGIF(startTime, maxRuntime);        //generates the gif
+  if (gifGenerated) {
+    mainGrid.gifEncoder.finish()  //finishes the gif encoding and saves it
+    return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize), "gifOutp": output }
+  } else {
+    mainGrid.gifEncoder.finish()
+    return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize), "gifOutp": null }
+  }
 }
 
 export default main
