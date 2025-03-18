@@ -566,7 +566,7 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
   }
 
   // Save final frame (in case it wasn’t captured)
-  const finalFrameName =  `${tempDir}/frame${frames.length.toString()}.png`
+  const finalFrameName =  `${tempDir}/frame${Math.ceil(frames.length / frameInterval).toString()}.png`
   const finalBuffer = canvas.toBuffer("image/png")
   fs.writeFileSync(finalFrameName, finalBuffer)
 

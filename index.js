@@ -13,8 +13,6 @@ if (!fs.existsSync(outputPath)) {
   fs.mkdirSync(outputPath)
   fs.mkdirSync(`${outputPath}/images`)
   fs.mkdirSync(`${outputPath}/videos`)
-} else {
-  fsExtra.emptyDirSync(tempDir)
 }
 
 //initialisation of express and the port
