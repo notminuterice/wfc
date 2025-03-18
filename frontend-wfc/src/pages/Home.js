@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useState, useRef} from "react";
 import s from "./Home.module.css"
 import axios from "axios"
 import Card from "../components/Card";
@@ -7,7 +7,9 @@ import ImagePlaceholder from "../components/ImagePlaceholder";
 import { saveAs } from "file-saver";
 function Home() {
   const [imgFile, setImgFile] = useState()
+  const [imgFileName, setImgFileName] = useState()
   const [imgPreview, setImgPreview] = useState()
+  const imgFileRef = useRef(null);
   const [outUrl, setOutUrl] = useState()
   const [generating, setGenerating] = useState(false)
   const [gifUrl, setGifUrl] = useState()
@@ -18,6 +20,7 @@ function Home() {
     if (event.target.files.length > 0) {
       const inputFile = event.target.files[0]
       setImgFile(inputFile)
+      setImgFileName(inputFile.name)
       setImgPreview(URL.createObjectURL(inputFile))
     }
   }
@@ -74,7 +77,11 @@ function Home() {
   }
 
   function downloadFile() {
-    saveAs(outUrl, "output")
+    if (outUrl) {
+      saveAs(outUrl, "output")
+    } else {
+      alert("No image generated")
+    }
   }
 
   function enforceRange(min, max, e) {
@@ -106,7 +113,11 @@ function Home() {
               <ImagePlaceholder/>
             )}
           </div>
-          <input type="file" accept="image/*" onChange={fileChange} className={s.input_file} />
+          <div className={s.input_file_wrapper}>
+            <input type="file" accept="image/*" onChange={fileChange} className={s.input_file} ref={imgFileRef} />
+            <button onClick={() => imgFileRef.current.click()} className={s.input_file_button}>Choose File</button>
+            <span className={s.input_file_text}>{imgFileName}</span>
+          </div>
           <div className={s.input_vals}>
             <FormWrapper  name="Tile Size">
               <input type="number" onChange={tileSizeChange} className={s.input_form} onKeyUp={(e) => { enforceRange(1, 64, e) }} placeholder="1-64"/>

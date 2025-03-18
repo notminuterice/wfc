@@ -13,17 +13,38 @@ body{
   color: #F4FAF7;
 }
 
-input[type=file] {
-  display: block;
-  font-style: oblique;
-  font-size: 15px;
-  margin-top: 2px;
-  font-family: 'Poppins', 'Arial', sans-serif;
-  color:#bfe7d5;
-  font-weight: 500;
+.input_file_wrapper{
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  margin-top: 5px;
 }
-.input_file, input[type=file]::file-selector-button {
-  color: #093a28;
+
+.input_file{
+  display: none;
+}
+
+.input_file_button {
+  background-color: #cce0d5;
+  color: rgb(7, 36, 25);
+  border: none;
+  height: 30px;
+  width: 100px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  font-size: 14px;
+}
+
+.input_file_button:hover {
+  background-color: #a1c2b0;
+}
+
+.input_file_text {
+  font-size: 14px;
+  color: #04271d;
+  font-weight: 500;
 }
 
 .main{
