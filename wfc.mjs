@@ -79,7 +79,7 @@ class MinHeap{
 
     //removes any elements with entropy 0 - already collapsed
     while (this.arr[0].entropy == 0){
-      this.arr.pop()
+      this.arr.shift()
     }
 
     const min = this.arr[0]         //grabs root node from heap
@@ -437,7 +437,6 @@ function createPath() {
   return (files[0] + 1).toString()
 }
 
-
 //turns the output array back into an image and saves it
 function arrToImg(imgData, pixelSize) {
   //creates a canvas to build the image
@@ -621,7 +620,8 @@ async function main(input, dimensions, tile, gridSize) {
   //error checks
   if(parseFloat(gridSize) != intGridSize) throw TypeError("Invalid grid size entered (must be a whole number)")
   if (parseFloat(tile) != parseInt(tile)) throw TypeError("Invalid tile size entered (must be a whole number)")
-  if (tileSize != Math.floor(tileSize)) throw RangeError("Invalid tile size")
+  if (intGridSize != Math.abs(intGridSize)) throw RangeError("Invalid grid size entered (must be positive)")
+  if (tileSize != Math.abs(tileSize)) throw RangeError("Invalid tile size entered (must be positive)")
   if (imgSize.w % tileSize != 0 || imgSize.h % tileSize != 0) throw RangeError("Invalid tile size")
 
   const output = createPath()
