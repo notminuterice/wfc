@@ -19,6 +19,10 @@ function Home() {
   function fileChange(event) {
     if (event.target.files.length > 0) {
       const inputFile = event.target.files[0]
+      if (event.target.files[0].type != "image/png") {
+        alert("invalid file type")
+        return
+      }
       setImgFile(inputFile)
       setImgFileName(inputFile.name)
       setImgPreview(URL.createObjectURL(inputFile))
@@ -77,19 +81,12 @@ function Home() {
       })
   }
 
-  function downloadImg() {
-    if (outUrl) {
-      saveAs(outUrl, "output")
-    } else {
-      alert("No image generated")
-    }
-  }
 
-  function downloadVideo() {
-    if (vidUrl) {
-      saveAs(vidUrl, "output")
+  function download(url) {
+    if (url) {
+      saveAs(url, "output")
     } else {
-      alert("No video generated")
+      alert("No output generated")
     }
   }
 
@@ -123,16 +120,16 @@ function Home() {
             )}
           </div>
           <div className={s.input_file_wrapper}>
-            <input type="file" accept="image/*" onChange={fileChange} className={s.input_file} ref={imgFileRef} />
+            <input type="file" accept="image/png" onChange={fileChange} className={s.input_file} ref={imgFileRef} />
             <button onClick={() => imgFileRef.current.click()} className={s.input_file_button}>Choose File</button>
             <span className={s.input_file_text}>{imgFileName}</span>
           </div>
           <div className={s.input_vals}>
             <FormWrapper  name="Tile Size">
-              <input type="number" onChange={tileSizeChange} className={s.input_form} onKeyUp={(e) => { enforceRange(1, 64, e) }} placeholder="1-64"/>
+              <input type="number" onChange={tileSizeChange} className={s.input_form} min="1" max="64" onKeyUp={(e) => { enforceRange(1, 64, e) }} placeholder="1-64"/>
             </FormWrapper>
             <FormWrapper  name="Output Grid Size (Tiles)">
-              <input type="number" onChange={gridSizeChange} className={s.input_form} onKeyUp={(e) => { enforceRange(1, 50, e); }} placeholder="1-50" />
+              <input type="number" onChange={gridSizeChange} className={s.input_form} min="1" max="50" onKeyUp={(e) => { enforceRange(1, 50, e); }} placeholder="1-50" />
             </FormWrapper>
             <button onClick={addFile} className={s.begin_button}>
               BEGIN WFC
@@ -149,10 +146,10 @@ function Home() {
                 <ImagePlaceholder isLoading={generating} />
             )}
           </div>
-          <button onClick={downloadImg} className={s.download_button}>
+          <button onClick={() => download(outUrl)} className={s.download_button}>
               DOWNLOAD
           </button>
-          <button onClick={downloadVideo} className={s.download_button}>
+          <button onClick={() => download(vidUrl)} className={s.download_button}>
               DOWNLOAD VIDEO
           </button>
         </Card>
