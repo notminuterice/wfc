@@ -141,7 +141,7 @@ function Home() {
             <FormWrapper  name="Output Grid Size (Tiles)">
               <input type="number" onChange={gridSizeChange} className={s.input_form} min="1" max="50" onKeyUp={(e) => { enforceRange(1, 50, e) }} placeholder="1-50" />
             </FormWrapper>
-            <button onClick={addFile} className={s.begin_button}>
+            <button onClick={runWFC} className={s.begin_button}>
               BEGIN WFC
             </button>
           </div>
