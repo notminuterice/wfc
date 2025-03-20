@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="4gonll8lsD_2U6s_HVUy" name="Page-1">
-        <mxGraphModel dx="4201" dy="1749" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="2023" dy="612" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -80,6 +80,9 @@
                 <mxCell id="28" value="Instantiate &lt;b&gt;new Tile&lt;/b&gt;&lt;font color=&quot;#000000&quot;&gt;&lt;b&gt;()&lt;/b&gt;&lt;/font&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;&amp;nbsp;object&amp;nbsp;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
                     <mxGeometry x="-288.71" y="710" width="212.5" height="60" as="geometry"/>
                 </mxCell>
+                <mxCell id="105" style="edgeStyle=none;html=1;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="32" target="20">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
                 <mxCell id="32" value="End inner loop" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
                     <mxGeometry x="-54.959999999999994" y="540" width="120" height="60" as="geometry"/>
                 </mxCell>
@@ -130,9 +133,6 @@
                 </mxCell>
                 <mxCell id="48" value="End outer loop" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
                     <mxGeometry x="-102.5" y="880" width="120" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="52" style="edgeStyle=none;html=1;entryX=0.286;entryY=1.028;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="23" target="20" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="56" value="" style="edgeStyle=none;html=1;" parent="1" source="53" target="55" edge="1">
                     <mxGeometry relative="1" as="geometry"/>

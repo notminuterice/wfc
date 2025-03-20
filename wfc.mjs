@@ -48,7 +48,7 @@ class MinHeap{
 
       if (left < this.arr.length && this.arr[left].entropy < this.arr[smallest].entropy) smallest = left
       if (right < this.arr.length && this.arr[right].entropy < this.arr[smallest].entropy) smallest = right
-      if (smallest === i) break //breaks if there are no children smaller than the current element
+      if (smallest == i) break //breaks if there are no children smaller than the current element
 
       [this.arr[i], this.arr[smallest]] = [this.arr[smallest], this.arr[i]]
       i = smallest
@@ -173,7 +173,7 @@ class Cell{
 
 class Grid{
   constructor(gridSize, tileKeys, tileSet, pixelSize, outputPath, tileSize, maxFrames){
-    this.gridSize = gridSize                  //the size of the grid (same as the width and height)
+    this.gridSize = gridSize                  //the size of the grid in tiles (same as the width and height)
     this.priorityQueue = new MinHeap([])      //priority queue (minimum heap) containing the cells/indexes in the grid
     this.complete = false                     //whether the collapse has finished
     this.tileKeys = tileKeys                  //all of the tile keys
@@ -184,7 +184,7 @@ class Grid{
     this.pixelSize = pixelSize                //the amount each pixel should be scaled up by
     this.tileSize = tileSize                  //number of pixels in the width/height of each tile
     this.prevCollapses = []                   //coordinates for the tiles that have been collapsed (in order)
-    this.maxFrames = maxFrames                //maximum frames in the GIF
+    this.maxFrames = maxFrames                //maximum frames in the video
     this.gridMatrix = this.initialiseGrid()   //2D array containing one cell in each element (the output grid)
   }
 
@@ -213,8 +213,9 @@ class Grid{
 
   //starts the collapse from coordinate 0,0 on the grid
   beginCollapse() {
-    this.prevCollapses.push([0,0])
-    this.collapse(0, 0)
+    const startPosition = Math.floor(this.gridSize/2)
+    this.prevCollapses.push([startPosition,startPosition])
+    this.collapse(startPosition, startPosition)
     if (this.failed == true){
       return false
     }
@@ -262,7 +263,7 @@ class Grid{
 
   //updates all of the surrounding cells after a cell has been collapsed
   propagate(x, y){
-    //if the current cell being propagated has not been collapsed
+    //if the current cell being propagated has been collapsed
     if (this.gridMatrix[y][x].chosenTile != null){
       //loops through all the neighbours of the current cell
       this.gridMatrix[y][x].neighbours.forEach(n => {
@@ -284,7 +285,7 @@ class Grid{
           this.propagate(x + dir[0], y + dir[1])
         }
       })
-    } else {  //if the cell has been collapsed
+    } else {  //if the cell has not been collapsed
       this.gridMatrix[y][x].neighbours.forEach(n => {
         const dir = this.getDirectionTile(n)                                      //converts the direction to a coordinate translation
         if (this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile != null) return  //skips the neighbour if it has been collapsed
@@ -530,7 +531,7 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
     //ends video generation if it takes too long
     if (Date.now() - startTime > maxRuntime) {
       console.error("Runtime exceeded during video generation")
-      throw Error("Runtime exceeded during video generation")
+      throw RangeError("Runtime exceeded during video generation")
     }
     const coords = frames[i]
     const cell = mainGrid.gridMatrix[coords[1]][coords[0]]
