@@ -1,4 +1,4 @@
-import React from "react";
+import React from "react"
 import s from "./CSSWave.module.css"
 
 function CSSWave() {

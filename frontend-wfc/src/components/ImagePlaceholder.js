@@ -1,4 +1,4 @@
-import React from "react";
+import React from "react"
 import s from "./ImagePlaceholder.module.css"
 import CSSWave from "./CSSWave"
 function ImagePlaceholder(props) {
