@@ -14,10 +14,16 @@ Firstly, clone the repository locally using
 git clone https://github.com/notminuterice/wfc.git
 ```
 
-or by using SSH. Then, in the main wfc directory run the following command:
+or by using SSH. Then, in the cd to the wfc directory:
 
 ```sh
-npm run install
+cd wfc
+```
+
+and run the following command:
+
+```sh
+npm run fullinstall
 ```
 
 ## Running
