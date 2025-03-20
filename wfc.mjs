@@ -456,13 +456,19 @@ function arrToImg(imgData, pixelSize) {
 }
 
 function saveImg(imgData, output, pixelSize) {
-  const canvas = arrToImg(imgData, pixelSize).canvas  //converts the array to a canvas that can be exported as a png
+  return new Promise((resolve, reject) => {
+    const canvas = arrToImg(imgData, pixelSize).canvas  //converts the array to a canvas that can be exported as a png
 
-  //saves the data to the file by piping it
-  const out = fs.createWriteStream(`./output/images/${output}.png`)
-  const stream = canvas.createPNGStream()
-  stream.pipe(out)
-  return output
+    //saves the data to the file by piping it
+    try {
+      const out = fs.createWriteStream(`./output/images/${output}.png`)
+      const stream = canvas.createPNGStream()
+      stream.pipe(out)
+    } catch (err) {
+      reject(new Error("Image piping failed"))
+    }
+    resolve(output)
+  })
 }
 
 //converts the 2d grid array to one that can be parsed by arrToImg()
@@ -499,106 +505,110 @@ function gridToArray(g, tileSize, tileSet) {
 }
 
 function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
-  const gridSize = mainGrid.gridSize
-  const tileSize = mainGrid.tileSize
-  const pixelSize = mainGrid.pixelSize
-  const pixelWidth = gridSize * tileSize * pixelSize
-  const pixelHeight = gridSize * tileSize * pixelSize
-  const tempDir = "./tempFrames"
-
-  //create temporary directory for frames if it doesn't exist
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir)
-  } else {
-    fsExtra.emptyDirSync(tempDir)
-  }
-
-  //creates the canvas
-  const canvas = createCanvas(pixelWidth, pixelHeight)
-  const ctx = canvas.getContext("2d")
-
-  //fills canvas background
-  ctx.fillStyle = "black"
-  ctx.fillRect(0, 0, pixelWidth, pixelHeight)
-
-  //information on frames
-  const frames = mainGrid.prevCollapses
-  const maxFrames = mainGrid.maxFrames
-  const frameInterval = Math.ceil(frames.length / maxFrames)
-
-  //loop over each previous collapse and draw the frame
-  for (let i = 0; i < frames.length; i++) {
-    //ends video generation if it takes too long
-    if (Date.now() - startTime > maxRuntime) {
-      console.error("Runtime exceeded during video generation")
-      throw RangeError("Runtime exceeded during video generation")
+  return new Promise((resolve, reject) => {
+    const gridSize = mainGrid.gridSize
+    const tileSize = mainGrid.tileSize
+    const pixelSize = mainGrid.pixelSize
+    const pixelWidth = gridSize * tileSize * pixelSize
+    const pixelHeight = gridSize * tileSize * pixelSize
+    const tempDir = "./tempFrames"
+  
+    //create temporary directory for frames if it doesn't exist
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir)
+    } else {
+      fsExtra.emptyDirSync(tempDir)
     }
-    const coords = frames[i]
-    const cell = mainGrid.gridMatrix[coords[1]][coords[0]]
-    const k = cell.chosenTile
-    if (!k) continue // skip if no tile selected
-
-    const tileGrid = mainGrid.tileSet[k].grid
-
-    //draw the tile on the canvas at the correct position
-    for (let y = 0; y < tileGrid.length; y++) {
-      for (let x = 0; x < tileGrid[0].length; x++) {
-        ctx.fillStyle = tileGrid[y][x];
-        ctx.fillRect(
-          coords[0] * tileSize * pixelSize + x * pixelSize,
-          coords[1] * tileSize * pixelSize + y * pixelSize,
-          pixelSize,
-          pixelSize
-        )
+  
+    //creates the canvas
+    const canvas = createCanvas(pixelWidth, pixelHeight)
+    const ctx = canvas.getContext("2d")
+  
+    //fills canvas background
+    ctx.fillStyle = "black"
+    ctx.fillRect(0, 0, pixelWidth, pixelHeight)
+  
+    //information on frames
+    const frames = mainGrid.prevCollapses
+    const maxFrames = mainGrid.maxFrames
+    const frameInterval = Math.ceil(frames.length / maxFrames)
+  
+    //loop over each previous collapse and draw the frame
+    for (let i = 0; i < frames.length; i++) {
+      //ends video generation if it takes too long
+      if (Date.now() - startTime > maxRuntime) {
+        console.error("Runtime exceeded during video generation")
+        throw RangeError("Runtime exceeded during video generation")
+      }
+      const coords = frames[i]
+      const cell = mainGrid.gridMatrix[coords[1]][coords[0]]
+      const k = cell.chosenTile
+      if (!k) continue // skip if no tile selected
+  
+      const tileGrid = mainGrid.tileSet[k].grid
+  
+      //draw the tile on the canvas at the correct position
+      for (let y = 0; y < tileGrid.length; y++) {
+        for (let x = 0; x < tileGrid[0].length; x++) {
+          ctx.fillStyle = tileGrid[y][x];
+          ctx.fillRect(
+            coords[0] * tileSize * pixelSize + x * pixelSize,
+            coords[1] * tileSize * pixelSize + y * pixelSize,
+            pixelSize,
+            pixelSize
+          )
+        }
+      }
+  
+      //write a frame to a file every time frameInterval number of collapses have happened
+      if (i % frameInterval === 0) {
+        const frameIndex = Math.floor(i / frameInterval)
+        const fileName = `${tempDir}/frame${frameIndex.toString()}.png`
+        const buffer = canvas.toBuffer("image/png")
+        fs.writeFileSync(fileName, buffer)
       }
     }
-
-    //write a frame to a file every time frameInterval number of collapses have happened
-    if (i % frameInterval === 0) {
-      const frameIndex = Math.floor(i / frameInterval)
-      const fileName = `${tempDir}/frame${frameIndex.toString()}.png`
-      const buffer = canvas.toBuffer("image/png")
-      fs.writeFileSync(fileName, buffer)
-    }
-  }
-
-  //save final frame just in case it wasnt captured
-  const finalFrameName =  `${tempDir}/frame${Math.ceil(frames.length / frameInterval).toString()}.png`
-  const finalBuffer = canvas.toBuffer("image/png")
-  fs.writeFileSync(finalFrameName, finalBuffer)
-
-  const ffmpegArgs = [
-    "-y",                                     //overrides output files
-    "-loglevel", "quiet",                     //stops it from outputting excess logs
-    "-framerate", "30",                       //sets framerate to 30
-    "-i", path.join(tempDir, "frame%d.png"),  //files to be read
-    "-c:v", "libx264",                        //encoding codec - H.264 format
-    "-pix_fmt", "yuv420p",                    //pixel format - most common one
-    `./output/videos/${outputPath}.mp4`       //output path
-  ]
-
-  const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs)
-
-  ffmpegProcess.on('error', (err) => {
-    //catches execution error (bad file)
-    console.log(`Error: ${err}`)
-  })
-
-  ffmpegProcess.stdout.on('data', (data) => {
-      console.log(data.toString())
-  })
-
-  ffmpegProcess.stderr.on('data', (data) => {
-      console.log(data.toString())
-  })
-
-  ffmpegProcess.on('close', (code) => {
-      console.log(`Process exited with code: ${code}`)
-      if (code === 0) {
-          console.log(`FFmpeg finished successfully`)
-      } else {
-          console.log(`FFmpeg ran into an error`)
-      }
+  
+    //save final frame just in case it wasnt captured
+    const finalFrameName =  `${tempDir}/frame${Math.ceil(frames.length / frameInterval).toString()}.png`
+    const finalBuffer = canvas.toBuffer("image/png")
+    fs.writeFileSync(finalFrameName, finalBuffer)
+  
+    const ffmpegArgs = [
+      "-y",                                     //overrides output files
+      "-loglevel", "quiet",                     //stops it from outputting excess logs
+      "-framerate", "30",                       //sets framerate to 30
+      "-i", path.join(tempDir, "frame%d.png"),  //files to be read
+      "-c:v", "libx264",                        //encoding codec - H.264 format
+      "-pix_fmt", "yuv420p",                    //pixel format - most common one
+      `./output/videos/${outputPath}.mp4`       //output path
+    ]
+  
+    const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs)
+  
+    ffmpegProcess.on('error', (err) => {
+      //catches execution error (bad file)
+      console.log(`Error: ${err}`)
+    })
+  
+    ffmpegProcess.stdout.on('data', (data) => {
+        console.log(data.toString())
+    })
+  
+    ffmpegProcess.stderr.on('data', (data) => {
+        console.log(data.toString())
+    })
+  
+    ffmpegProcess.on('close', (code) => {
+        console.log(`Process exited with code: ${code}`)
+        if (code === 0) {
+            console.log(`FFmpeg finished successfully`)
+            resolve(true)
+        } else {
+            console.log(`FFmpeg ran into an error`)
+            reject(new Error(`FFmpeg error: ${code}`))
+        }
+    })
   })
 }
 
@@ -648,13 +658,14 @@ async function main(input, dimensions, tile, gridSize) {
   if (tries == 50) throw RangeError("Generation failed. Try again with a lower output grid size")
 
   console.log("Image generation complete!")
-
+  const imageOutput = await saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize)
   try {
-    generateVideo(mainGrid, startTime, maxRuntime, output)  //creates a video from the temporary tiles
-    return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize), "videoOutp": output }
+    const valid = await generateVideo(mainGrid, startTime, maxRuntime, output)  //creates a video from the temporary tiles
+    if (valid) return { "outP": imageOutput, "videoOutp": output }
+    throw Error ("video generation failed")
   } catch (err){
     console.error(`video generation error: ${err}`)
-    return { "outP": saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize), "videoOutp": null }   //doesn't add the video path if not generated
+    return { "outP": imageOutput, "videoOutp": null }   //doesn't add the video path if not generated
   }
 
 }

@@ -9,11 +9,7 @@ import fs from "fs"
 
 const __dirname = dirname(fileURLToPath(import.meta.url)) //used for directory navigation
 const outputPath = "./output"
-if (!fs.existsSync(outputPath)) {
-  fs.mkdirSync(outputPath)
-  fs.mkdirSync(`${outputPath}/images`)
-  fs.mkdirSync(`${outputPath}/videos`)
-}
+
 
 //initialisation of express and the port
 const app = express()
@@ -42,6 +38,17 @@ app.post("/upload", upload.single("image"), async (req, res) => {
     return res.status(400).send("No file uploaded");
   }
 
+  if (!fs.existsSync(outputPath)) {
+    fs.mkdirSync(outputPath)
+    fs.mkdirSync(`${outputPath}/images`)
+    fs.mkdirSync(`${outputPath}/videos`)
+  } if (!fs.existsSync(`${outputPath}/images`)){
+    fs.mkdirSync(`${outputPath}/images`)
+  }
+  if (!fs.existsSync(`${outputPath}/videos`)){
+    fs.mkdirSync(`${outputPath}/videos`)
+  }
+
   console.log("File uploaded successfully");
   const dimensions = sizeOf(`./input/${req.file.filename}`) //finds the pixel dimensions of the image
   let outP
@@ -55,19 +62,17 @@ app.post("/upload", upload.single("image"), async (req, res) => {
     res.status(500).send(`PROCESSING ERROR ${err}`)
     return
   }
-  //returns the links after a delay to ensure they are fully piped into the respective files
-  setTimeout(() => {
-    let vidUrl = null
-    if (videoOutp != null) {
-      vidUrl = `http://localhost:8000/videos/${videoOutp}.mp4`
-    }
-    //sends back a success response containing required URLs
-    res.status(200).json({
-      message: "Image generation complete",
-      imgUrl: `http://localhost:8000/images/${outP}.png`,
-      vidUrl: vidUrl
-    })
-  }, 500)
+  //returns the links
+  let vidUrl = null
+  if (videoOutp != null) {
+    vidUrl = `http://localhost:8000/videos/${videoOutp}.mp4`
+  }
+  //sends back a success response containing required URLs
+  res.status(200).json({
+    message: "Image generation complete",
+    imgUrl: `http://localhost:8000/images/${outP}.png`,
+    vidUrl: vidUrl
+  })
 })
 
 //starts listening to the port

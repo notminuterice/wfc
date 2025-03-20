@@ -60,7 +60,7 @@ function Home() {
         setOutUrl(res.data.imgUrl);  //sets the image url to the value in the response
         if (!res.data.vidUrl) {
           alert("Video generation timed out. Displaying image instead")
-          setVidUrl(null);
+          setVidUrl(res.data.imgUrl);
         } else {
           setVidUrl(res.data.vidUrl);  //sets the gif url to the value in the response
         }
