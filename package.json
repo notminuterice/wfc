@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"node index.js\" \"cd frontend-wfc && npm start\""
+    "dev": "concurrently \"node index.js\" \"cd frontend-wfc && npm start\"",
+    "install": "npm i && npm install --prefix frontend-wfc"
   },
   "author": "",
   "license": "ISC",

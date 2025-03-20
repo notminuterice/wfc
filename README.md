@@ -17,16 +17,8 @@ git clone https://github.com/notminuterice/wfc.git
 or by using SSH. Then, in the main wfc directory run the following command:
 
 ```sh
-npm i
+npm run install
 ```
-
-or
-
-```sh
-yarn add
-```
-
-If you use Yarn. This will install all of the necessary dependencies for the code to run
 
 ## Running
 
@@ -67,3 +59,4 @@ npm start
 - The image must be comprised of only tiles, as extra pixels around the edges of the image will cause the algorithm to break
 - If the output grid is too large, it may take too long to run and fail
 - Often times the algorithm fails as there are no possible tiles left to collapse, in which case it runs again to produce a valid output
+- There is a generation time limit of 60 seconds, and it stop and will alert you if this is exceeded.
