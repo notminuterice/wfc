@@ -172,7 +172,7 @@ class Cell{
 }
 
 class Grid{
-  constructor(gridSize, tileKeys, tileSet, pixelSize, outputPath, tileSize, maxFrames){
+  constructor(gridSize, tileKeys, tileSet, pixelSize, tileSize, maxFrames, startTime, maxRuntime){
     this.gridSize = gridSize                  //the size of the grid in tiles (same as the width and height)
     this.priorityQueue = new MinHeap([])      //priority queue (minimum heap) containing the cells/indexes in the grid
     this.complete = false                     //whether the collapse has finished
@@ -187,6 +187,8 @@ class Grid{
     this.maxFrames = maxFrames                //maximum frames in the video
     this.gridMatrix = this.initialiseGrid()   //2D array containing one cell in each element (the output grid)
     this.propagateStack = []
+    this.startTime = startTime
+    this.maxRuntime = maxRuntime
   }
 
   //returns a grid full of default cells
@@ -225,6 +227,9 @@ class Grid{
 
   //collapses and propagates a given cell
   collapse(x, y) {
+    if (Date.now() - this.startTime > this.maxRuntime) {
+      throw Error("Runtime exceeded during collapse")
+    }
     this.gridMatrix[y][x].collapse() //runs the collapse function in the cell object at the coordinates
     if (this.iterationCount != this.collapsedCells.length) {
       this.prevCollapses.push([x, y]) //records the collapse if a new cell has been collapsed
@@ -696,7 +701,7 @@ async function main(input, dimensions, tile, gridSize) {
       throw Error("Runtime exceeded during collapse")
     }
     tries++
-    mainGrid = new Grid(intGridSize, Object.keys(tileSet), tileSet, pixelSize, output, tileSize, maxFrames) //resets the grid
+    mainGrid = new Grid(intGridSize, Object.keys(tileSet), tileSet, pixelSize, tileSize, maxFrames, startTime, maxRuntime) //resets the grid
     success = mainGrid.beginCollapse();  //starts the collapse algorithm
     if (success == false){
       console.log(`failed: iter ${tries}`)

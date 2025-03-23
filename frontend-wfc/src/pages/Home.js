@@ -72,7 +72,6 @@ function Home() {
 
         if (!res.data.vidUrl) {
           alert("Video generation timed out. Displaying image instead")
-          setVidUrl(res.data.imgUrl)  //sets the output to the still image if the video creation failed
         } else {
           setVidUrl(res.data.vidUrl)  //sets the video url to the value in the response
         }
@@ -111,6 +110,18 @@ function Home() {
     }
   }
 
+  //checks if input is a number
+  function isNum(e) {
+    let val = e.target.value
+    //if value is not a number
+    if (isNaN(val)) {
+      //removes last element
+      val = val.split("")
+      val.pop()
+      e.target.value = val.join("") //sets form value to new value
+    }
+  }
+
   return (
     <div className={s.main}>
       <div className={s.title}>
@@ -136,10 +147,10 @@ function Home() {
           </div>
           <div className={s.input_vals}>
             <FormWrapper  name="Tile Size">
-              <input type="number" onChange={tileSizeChange} className={s.input_form} min="1" max="64" onKeyUp={(e) => { enforceRange(1, 64, e) }} placeholder="1-64"/>
+              <input onChange={tileSizeChange} onInput={isNum} className={s.input_form} min="1" max="64" onKeyUp={(e) => { enforceRange(1, 64, e) }} placeholder="1-64"/>
             </FormWrapper>
             <FormWrapper  name="Output Grid Size (Tiles)">
-              <input type="number" onChange={gridSizeChange} className={s.input_form} min="1" max="50" onKeyUp={(e) => { enforceRange(1, 50, e) }} placeholder="1-50" />
+              <input onChange={gridSizeChange} className={s.input_form} min="1" max="100" onKeyUp={(e) => { enforceRange(1, 100, e) }} placeholder="1-100" />
             </FormWrapper>
             <button onClick={runWFC} className={s.begin_button}>
               BEGIN WFC
@@ -153,7 +164,11 @@ function Home() {
             {vidUrl ? (
               <video src={vidUrl} alt="forest" className={s.output} autoPlay={true} />
             ) : (
+              outUrl ? (
+                <img src={outUrl} className={s.output} />
+              ) : (
                 <ImagePlaceholder isLoading={generating} />
+              )
             )}
           </div>
           <button onClick={() => download(outUrl)} className={s.download_button}>
