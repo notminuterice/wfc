@@ -150,7 +150,7 @@ function Home() {
               <input onChange={tileSizeChange} onInput={isNum} className={s.input_form} min="1" max="64" onKeyUp={(e) => { enforceRange(1, 64, e) }} placeholder="1-64"/>
             </FormWrapper>
             <FormWrapper  name="Output Grid Size (Tiles)">
-              <input onChange={gridSizeChange} className={s.input_form} min="1" max="100" onKeyUp={(e) => { enforceRange(1, 100, e) }} placeholder="1-100" />
+              <input onChange={gridSizeChange} onInput={isNum} className={s.input_form} min="1" max="50" onKeyUp={(e) => { enforceRange(1, 50, e) }} placeholder="1-50" />
             </FormWrapper>
             <button onClick={runWFC} className={s.begin_button}>
               BEGIN WFC
