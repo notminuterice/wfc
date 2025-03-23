@@ -9,5 +9,5 @@
     "wfc.mjs",
     "index.js",
     "videoGen.mjs"
-  ]
+, "runserver.mjs"  ]
 }

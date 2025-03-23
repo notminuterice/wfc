@@ -48,6 +48,16 @@ function Home() {
       alert("No file selected")
       return
     }
+    //alerts user if no tile size has been detected when the WFC is run
+    if (!tileSize) {
+      alert("No tile size inputted")
+      return
+    }
+    //alerts user if no grid size has been detected when the WFC is run
+    if (!gridSize) {
+      alert("No grid size inputted")
+      return
+    }
 
     //prevents the user from trying to collapse an image before the previous one has been completed
     if (generating) {
@@ -56,6 +66,7 @@ function Home() {
     }
 
     setVidUrl(null)     //resets the output video
+    setOutUrl(null)     //resets the output image
     setGenerating(true) //says that generation has begun
 
     //adds all of the required data to the POST request
@@ -77,6 +88,7 @@ function Home() {
         }
         setGenerating(false)
       }).catch((err) => {
+        console.log(err)
         //sends an alert if there is an error response
         if (err.response){
           console.error("Error uploading image:", err.response.data)

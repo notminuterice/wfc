@@ -13,7 +13,7 @@ const outputPath = "./output"                             //output directory
 
 //initialisation of express and the port
 const app = express()
-const port = 8000;
+const port = 8000
 
 app.use(cors({origin: ["http://localhost:3000"]}))                //enables server to be accessed from localhost
 app.use('/images', express.static(`${__dirname}/output/images`))  //lets the client access images using link routing
@@ -51,15 +51,15 @@ function buildOutputDir() {
 
 //handles file uploads (POST)
 app.post("/upload", upload.single("image"), async (req, res) => {
-  const data = req.body; //retrieves the data from the request
+  const data = req.body //retrieves the data from the request
   //sends an error if no file was sent
   if (!req.file) {
-    return res.status(400).send("No file uploaded");
+    return res.status(500).send("No file uploaded")
   }
 
   buildOutputDir()
 
-  console.log("File uploaded successfully");
+  console.log("File uploaded successfully")
   const dimensions = sizeOf(`./input/${req.file.filename}`) //finds the pixel dimensions of the image
   let imageOutP //image output path
   let videoOutp //video output path
