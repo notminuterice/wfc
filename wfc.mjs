@@ -186,6 +186,7 @@ class Grid{
     this.prevCollapses = []                   //coordinates for the tiles that have been collapsed (in order)
     this.maxFrames = maxFrames                //maximum frames in the video
     this.gridMatrix = this.initialiseGrid()   //2D array containing one cell in each element (the output grid)
+    this.propagateStack = []
   }
 
   //returns a grid full of default cells
@@ -228,8 +229,9 @@ class Grid{
     if (this.iterationCount != this.collapsedCells.length) {
       this.prevCollapses.push([x, y]) //records the collapse if a new cell has been collapsed
     }
-    this.iterationCount = this.collapsedCells.length //updates the collapse iteration
-    this.propagate(x, y)
+    this.iterationCount = this.collapsedCells.length; //updates the collapse iteration
+    this.propagateStack.push([x, y])
+    this.propagate()
     //cancels if the collapsing or propagating fails
     if (this.failed){
       console.error("collapse failed")
@@ -262,55 +264,59 @@ class Grid{
   }
 
   //updates all of the surrounding cells after a cell has been collapsed
-  propagate(x, y){
-    //if the current cell being propagated has been collapsed
-    if (this.gridMatrix[y][x].chosenTile != null){
-      //loops through all the neighbours of the current cell
-      this.gridMatrix[y][x].neighbours.forEach(n => {
-        const dir = this.getDirectionTile(n)                                      //converts the direction to a coordinate translation
-        if (this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile != null) return  //skips the neighbour if it has been collapsed
+  propagate() {
+    while (this.propagateStack.length > 0) {
+      const [x, y] = this.propagateStack.pop()
+      //if the current cell being propagated has been collapsed
+      if (this.gridMatrix[y][x].chosenTile != null){
+        //loops through all the neighbours of the current cell
+        this.gridMatrix[y][x].neighbours.forEach(n => {
+          const dir = this.getDirectionTile(n)                                      //converts the direction to a coordinate translation
+          if (this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile != null) return  //skips the neighbour if it has been collapsed
 
-        const prevTileValues = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles                          //stores the previous possible tiles of the neighbour
-        const thisPossibleTiles = this.tileSet[this.gridMatrix[y][x].chosenTile.toString()].adjacencyRules[n] //stores the tile rules of the cell being propagated
+          const prevTileValues = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles                          //stores the previous possible tiles of the neighbour
+          const thisPossibleTiles = this.tileSet[this.gridMatrix[y][x].chosenTile.toString()].adjacencyRules[n] //stores the tile rules of the cell being propagated
 
-        //filters out the possible tiles for the neighbour that are not in the adjacency tile rules for the current cell
-        this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.filter(t => thisPossibleTiles.includes(t))
-        //updates the cell entropy
-        this.gridMatrix[y + dir[1]][x + dir[0]].entropy = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length
+          //filters out the possible tiles for the neighbour that are not in the adjacency tile rules for the current cell
+          this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.filter(t => thisPossibleTiles.includes(t))
+          //updates the cell entropy
+          this.gridMatrix[y + dir[1]][x + dir[0]].entropy = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length
 
-        const e = {x:x + dir[0], y:y + dir[1], e:this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length}  //element to be put in the priority queue
-        this.priorityQueue.insert(e)
-        //propagates again if the number of possible tiles was updated
-        if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length != prevTileValues.length){
-          this.propagate(x + dir[0], y + dir[1])
-        }
-      })
-    } else {  //if the cell has not been collapsed
-      this.gridMatrix[y][x].neighbours.forEach(n => {
-        const dir = this.getDirectionTile(n)                                      //converts the direction to a coordinate translation
-        if (this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile != null) return  //skips the neighbour if it has been collapsed
+          const e = {x:x + dir[0], y:y + dir[1], e:this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length}  //element to be put in the priority queue
+          this.priorityQueue.insert(e)
+          //propagates again if the number of possible tiles was updated
+          if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length != prevTileValues.length) {
+            this.propagateStack.push([x + dir[0], y + dir[1]])
+          }
+        })
+      } else {  //if the cell has not been collapsed
+        this.gridMatrix[y][x].neighbours.forEach(n => {
+          const dir = this.getDirectionTile(n)                                      //converts the direction to a coordinate translation
+          if (this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile != null) return  //skips the neighbour if it has been collapsed
 
-        const prevTileValues = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles                                     //stores the previous possible tiles of the neighbour
-        const thisPossibleTiles = this.gridMatrix[y][x].possibleTiles.map(t => this.tileSet[t].adjacencyRules[n]).flat() //stores the tile rules of the cell being propagated
+          const prevTileValues = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles                                     //stores the previous possible tiles of the neighbour
+          const thisPossibleTiles = this.gridMatrix[y][x].possibleTiles.map(t => this.tileSet[t].adjacencyRules[n]).flat() //stores the tile rules of the cell being propagated
 
-        //filters out the possible tiles for the neighbour that are not in the adjacency tile rules for the current cell
-        this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.filter(t => thisPossibleTiles.includes(t))
-        //updates the cell entropy
-        this.gridMatrix[y + dir[1]][x + dir[0]].entropy = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length
+          //filters out the possible tiles for the neighbour that are not in the adjacency tile rules for the current cell
+          this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.filter(t => thisPossibleTiles.includes(t))
+          //updates the cell entropy
+          this.gridMatrix[y + dir[1]][x + dir[0]].entropy = this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length
 
-        //fails if there are no more possible tiles in the neighbour and it hasn't already been collapsed
-        if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length == 0 && this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile == null){
-          this.failed = true
-          return
-        }
-        const e = {x:x + dir[0], y:y + dir[1], e:this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length} //element to be put in the priority queue
-        this.priorityQueue.insert(e)
-        //propagates again if the number of possible tiles was updated
-        if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length != prevTileValues.length){
-          this.propagate(x + dir[0], y + dir[1])
-        }
-      })
+          //fails if there are no more possible tiles in the neighbour and it hasn't already been collapsed
+          if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length == 0 && this.gridMatrix[y + dir[1]][x + dir[0]].chosenTile == null){
+            this.failed = true
+            return
+          }
+          const e = {x:x + dir[0], y:y + dir[1], e:this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length} //element to be put in the priority queue
+          this.priorityQueue.insert(e)
+          //propagates again if the number of possible tiles was updated
+          if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length != prevTileValues.length){
+            this.propagateStack.push([x + dir[0], y + dir[1]])
+          }
+        })
+      }
     }
+
   }
 }
 
@@ -333,6 +339,45 @@ function pixelsToMatrix(pxs, tileSize){
     output[Math.floor(i/(4*tileSize))][(i/4)%tileSize] = rgbToHex(pxs.slice(i, i+3)) //matches pixel colour value with its x and y coordinates
   }
   return output
+}
+
+//turns a hex code into an rgb output
+function hexToRgb(hex) {
+  hex = hex.replace(/^#/, '')
+  // turn shortened hex into full size form
+  if (hex.length === 3) {
+      hex = hex.split('').map(c => c + c).join('')
+  }
+
+  // convert to RGB values
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+  return [r,g,b]
+}
+
+//checks if the colours are similar enough to be called the same (issue with image compression)
+function areColoursSimilar(c1, c2) {
+  const threshold = 5 //max difference in colours
+  c1 = hexToRgb(c1)
+  c2 = hexToRgb(c2)
+
+  return (
+    Math.abs(c1[0] - c2[0]) <= threshold &&  // red
+    Math.abs(c1[1] - c2[1]) <= threshold &&  // green
+    Math.abs(c1[2] - c2[2]) <= threshold     // blue
+  )
+}
+
+//checks if tiles are duplicates
+function dupeTile(tile1, tile2) {
+  let dupe = true
+  tile1.forEach((row, x) => {
+    row.forEach((element, y) => {
+      if (!areColoursSimilar(element, tile2[x][y])) { dupe = false } //sees if tiles are identical/almost identical
+    })
+  })
+  return dupe
 }
 
 //gets the pixels in the range of the tile being processed
@@ -397,7 +442,7 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
 
         //goes through the new flattened tileset and check if the current tile is equal to any of them
         for (let [nK, val] of Object.entries(flattenedTileset)){
-          if (JSON.stringify(val.grid) == JSON.stringify(tile.grid)){ //if the current tile is a duplicate of another tile in the flat tileset
+          if (dupeTile(val.grid, tile.grid)){ //if the current tile is a duplicate of another tile in the flat tileset
             //appends the adjecency rules of the current duplicate tile to the already existing tile in the flattened tileset
             flattenedTileset[nK].adjacencyRules.up.push(...tile.adjacencyRules.up)
             flattenedTileset[nK].adjacencyRules.down.push(...tile.adjacencyRules.down)
@@ -423,6 +468,7 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
           for (let [a, n] of Object.entries(dir)){
             flattenedTileset[t].adjacencyRules[d][a] = newMapping[n]
           }
+          flattenedTileset[t].adjacencyRules[d] = [...new Set(flattenedTileset[t].adjacencyRules[d])] //removes duplicates in adjacency rules
         }
       }
       tileSet = flattenedTileset
@@ -512,27 +558,27 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
     const pixelWidth = gridSize * tileSize * pixelSize
     const pixelHeight = gridSize * tileSize * pixelSize
     const tempDir = "./tempFrames"
-  
+
     //create temporary directory for frames if it doesn't exist
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir)
     } else {
       fsExtra.emptyDirSync(tempDir)
     }
-  
+
     //creates the canvas
     const canvas = createCanvas(pixelWidth, pixelHeight)
     const ctx = canvas.getContext("2d")
-  
+
     //fills canvas background
     ctx.fillStyle = "black"
     ctx.fillRect(0, 0, pixelWidth, pixelHeight)
-  
+
     //information on frames
     const frames = mainGrid.prevCollapses
     const maxFrames = mainGrid.maxFrames
     const frameInterval = Math.ceil(frames.length / maxFrames)
-  
+
     //loop over each previous collapse and draw the frame
     for (let i = 0; i < frames.length; i++) {
       //ends video generation if it takes too long
@@ -544,9 +590,9 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
       const cell = mainGrid.gridMatrix[coords[1]][coords[0]]
       const k = cell.chosenTile
       if (!k) continue // skip if no tile selected
-  
+
       const tileGrid = mainGrid.tileSet[k].grid
-  
+
       //draw the tile on the canvas at the correct position
       for (let y = 0; y < tileGrid.length; y++) {
         for (let x = 0; x < tileGrid[0].length; x++) {
@@ -559,7 +605,7 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
           )
         }
       }
-  
+
       //write a frame to a file every time frameInterval number of collapses have happened
       if (i % frameInterval === 0) {
         const frameIndex = Math.floor(i / frameInterval)
@@ -568,12 +614,12 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
         fs.writeFileSync(fileName, buffer)
       }
     }
-  
+
     //save final frame just in case it wasnt captured
     const finalFrameName =  `${tempDir}/frame${Math.ceil(frames.length / frameInterval).toString()}.png`
     const finalBuffer = canvas.toBuffer("image/png")
     fs.writeFileSync(finalFrameName, finalBuffer)
-  
+
     const ffmpegArgs = [
       "-y",                                     //overrides output files
       "-loglevel", "quiet",                     //stops it from outputting excess logs
@@ -583,22 +629,22 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
       "-pix_fmt", "yuv420p",                    //pixel format - most common one
       `./output/videos/${outputPath}.mp4`       //output path
     ]
-  
+
     const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs)
-  
+
     ffmpegProcess.on('error', (err) => {
       //catches execution error (bad file)
       console.log(`Error: ${err}`)
     })
-  
+
     ffmpegProcess.stdout.on('data', (data) => {
         console.log(data.toString())
     })
-  
+
     ffmpegProcess.stderr.on('data', (data) => {
         console.log(data.toString())
     })
-  
+
     ffmpegProcess.on('close', (code) => {
         console.log(`Process exited with code: ${code}`)
         if (code === 0) {
@@ -618,7 +664,8 @@ async function main(input, dimensions, tile, gridSize) {
     w: dimensions.width,
     h: dimensions.height
   }
-  const maxFrames = 100                   //maximum number of frames in the video
+  const maxFrames = 100;                   //maximum number of frames in the video
+  const maxTries = 200;                   //maximum number of collapse attempts
   const startTime = Date.now()            //time at start of collapse
   const maxRuntime = 60000                //maximum time in ms before failure
   let tileSet = {}                        //key: tile key, value: tile object
@@ -638,32 +685,32 @@ async function main(input, dimensions, tile, gridSize) {
   const output = createPath()
 
   try {
-    tileSet = await getPixelValues(input, tileSize, tileSet, imgSize, pixelSize, output, tileSize, maxFrames) //creates the tile set from the input image
+    tileSet = await getPixelValues(input, tileSize, tileSet, imgSize) //creates the tile set from the input image
   } catch (err) {
     throw Error("Tileset generation failed")
   }
   console.log("Tileset generated!")
   //keeps running the algorithm until a full successful collapse or 50 tries has been exceeded
-  while (tries < 50 && success == false) {
+  while (tries < 200 && success == false) {
     if (Date.now() - startTime > maxRuntime) {
       throw Error("Runtime exceeded during collapse")
     }
     tries++
     mainGrid = new Grid(intGridSize, Object.keys(tileSet), tileSet, pixelSize, output, tileSize, maxFrames) //resets the grid
-    success = mainGrid.beginCollapse()  //starts the collapse algorithm
+    success = mainGrid.beginCollapse();  //starts the collapse algorithm
     if (success == false){
       console.log(`failed: iter ${tries}`)
     }
   }
-  if (tries == 50) throw RangeError("Generation failed. Try again with a lower output grid size")
+  if (tries == 200) throw RangeError("Generation failed. Try again with a lower output grid size")
 
   console.log("Image generation complete!")
   const imageOutput = await saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize)
   try {
-    const valid = await generateVideo(mainGrid, startTime, maxRuntime, output)  //creates a video from the temporary tiles
+    const valid = await generateVideo(mainGrid, startTime, maxRuntime, output);  //creates a video from the temporary tiles
     if (valid) return { "outP": imageOutput, "videoOutp": output }
     throw Error ("video generation failed")
-  } catch (err){
+  } catch (err) {
     console.error(`video generation error: ${err}`)
     return { "outP": imageOutput, "videoOutp": null }   //doesn't add the video path if not generated
   }
