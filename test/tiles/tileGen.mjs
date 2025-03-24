@@ -1,4 +1,4 @@
-import getPixels from 'https://esm.sh/get-pixels';
+import getPixels from 'https://esm.sh/get-pixels'
 
 /*a tile representing an nxn grid of pixel values in the ORIGINAL image.
 the top left pixel of a tile goes in each cell within the grid*/

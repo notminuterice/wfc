@@ -131,6 +131,43 @@ class Tile{
   }
 }
 
+//stack used during propagation to avoid recursion
+class Stack{
+  constructor() {
+    this.arr = [] //array containing stack elements
+    this.maxStack = 100_000 //maximum number of elements in the stack
+  }
+
+  //checks if the stack is full
+  isFull() {
+    //it is full if the array contains the same amount or more than the max stack value
+    if (this.arr.length >= this.maxStack) {
+      return true
+    }
+    return false
+  }
+
+  isEmpty() {
+    //it is empty if the array contains no elements
+    if (this.arr.length <= 0) {
+      return true
+    }
+    return false
+  }
+
+  //push an element to the top of the stack
+  push(element) {
+    if (this.isFull()) throw Error("Stack overflow during propagation - max stack size reached") //halts the program if the propagation causes a stack overflow
+    this.arr.push(element)
+  }
+
+  //pop an element from the top of the stack
+  pop() {
+    if (this.isEmpty()) throw Error("Stack underflow during propagation - no cells left to pop")
+    return this.arr.pop()
+  }
+}
+
 //class for each individual cell within the OUTPUT grid
 class Cell{
   constructor(x, y, tiles, gridSize, tileSet){
@@ -186,9 +223,9 @@ class Grid{
     this.prevCollapses = []                   //coordinates for the tiles that have been collapsed (in order)
     this.maxFrames = maxFrames                //maximum frames in the video
     this.gridMatrix = this.initialiseGrid()   //2D array containing one cell in each element (the output grid)
-    this.propagateStack = []
-    this.startTime = startTime
-    this.maxRuntime = maxRuntime
+    this.propagateStack = new Stack()         //stack used for navigating the grid during propagation
+    this.startTime = startTime                //start time of the generation
+    this.maxRuntime = maxRuntime              //max runtime
   }
 
   //returns a grid full of default cells
@@ -234,7 +271,7 @@ class Grid{
     if (this.iterationCount != this.collapsedCells.length) {
       this.prevCollapses.push([x, y]) //records the collapse if a new cell has been collapsed
     }
-    this.iterationCount = this.collapsedCells.length; //updates the collapse iteration
+    this.iterationCount = this.collapsedCells.length //updates the collapse iteration
     this.propagateStack.push([x, y])
     this.propagate()
     //cancels if the collapsing or propagating fails
@@ -270,8 +307,8 @@ class Grid{
 
   //updates all of the surrounding cells after a cell has been collapsed
   propagate() {
-    while (this.propagateStack.length > 0) {
-      const [x, y] = this.propagateStack.pop()
+    while (!this.propagateStack.isEmpty()) {  //continue propagating until there is nothing left in the propagation stack
+      const [x, y] = this.propagateStack.pop()  //get the coordinates of the next cell to be propagated
       //if the current cell being propagated has been collapsed
       if (this.gridMatrix[y][x].chosenTile != null){
         //loops through all the neighbours of the current cell
@@ -291,7 +328,7 @@ class Grid{
           this.priorityQueue.insert(e)
           //propagates again if the number of possible tiles was updated
           if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length != prevTileValues.length) {
-            this.propagateStack.push([x + dir[0], y + dir[1]])
+            this.propagateStack.push([x + dir[0], y + dir[1]]) //push the next cell to be propagated to the stack
           }
         })
       } else {  //if the cell has not been collapsed
@@ -316,7 +353,7 @@ class Grid{
           this.priorityQueue.insert(e)
           //propagates again if the number of possible tiles was updated
           if (this.gridMatrix[y + dir[1]][x + dir[0]].possibleTiles.length != prevTileValues.length){
-            this.propagateStack.push([x + dir[0], y + dir[1]])
+            this.propagateStack.push([x + dir[0], y + dir[1]])  //push the next cell to be propagated to the stack
           }
         })
       }
@@ -482,11 +519,13 @@ async function getPixelValues(path, tileSize, tileSet, imgSize){
   })
 }
 
+//used to create the filename for the output files
 function createPath() {
+  //get all of the filenames in the images directory and sort them by number
   const files = fs.readdirSync("./output/images/").map(n => parseInt(n.split(".")[0]))
     .sort((a, b) => b - a)
-  if (files.length == 0) return "1"
-  return (files[0] + 1).toString()
+  if (files.length == 0) return "1" //set the filename to 1 if no files were found in the directory
+  return (files[0] + 1).toString()  //return the highest number + 1
 }
 
 //turns the output array back into an image and saves it
@@ -556,6 +595,7 @@ function gridToArray(g, tileSize, tileSet) {
 }
 
 function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
+  //done in a promise to ensure that the video is saved before sending the result back to the frontend
   return new Promise((resolve, reject) => {
     const gridSize = mainGrid.gridSize
     const tileSize = mainGrid.tileSize
@@ -601,7 +641,7 @@ function generateVideo(mainGrid, startTime, maxRuntime, outputPath) {
       //draw the tile on the canvas at the correct position
       for (let y = 0; y < tileGrid.length; y++) {
         for (let x = 0; x < tileGrid[0].length; x++) {
-          ctx.fillStyle = tileGrid[y][x];
+          ctx.fillStyle = tileGrid[y][x]
           ctx.fillRect(
             coords[0] * tileSize * pixelSize + x * pixelSize,
             coords[1] * tileSize * pixelSize + y * pixelSize,
@@ -669,8 +709,8 @@ async function main(input, dimensions, tile, gridSize) {
     w: dimensions.width,
     h: dimensions.height
   }
-  const maxFrames = 100;                   //maximum number of frames in the video
-  const maxTries = 200;                   //maximum number of collapse attempts
+  const maxFrames = 100                   //maximum number of frames in the video
+  const maxTries = 200                   //maximum number of collapse attempts
   const startTime = Date.now()            //time at start of collapse
   const maxRuntime = 60000                //maximum time in ms before failure
   let tileSet = {}                        //key: tile key, value: tile object
@@ -696,7 +736,8 @@ async function main(input, dimensions, tile, gridSize) {
   }
   console.log("Tileset generated!")
   //keeps running the algorithm until a full successful collapse or 50 tries has been exceeded
-  while (tries < 200 && success == false) {
+  while (tries < maxTries && success == false) {
+    //check to see if the runtime has been exceeded
     if (Date.now() - startTime > maxRuntime) {
       throw Error("Runtime exceeded during collapse")
     }
@@ -707,19 +748,18 @@ async function main(input, dimensions, tile, gridSize) {
       console.log(`failed: iter ${tries}`)
     }
   }
-  if (tries == 200) throw RangeError("Generation failed. Try again with a lower output grid size")
+  if (tries == maxTries) throw RangeError("Generation failed. Try again with a lower output grid size")
 
   console.log("Image generation complete!")
   const imageOutput = await saveImg(gridToArray(mainGrid.gridMatrix, tileSize, tileSet), output, pixelSize)
   try {
-    const valid = await generateVideo(mainGrid, startTime, maxRuntime, output);  //creates a video from the temporary tiles
+    const valid = await generateVideo(mainGrid, startTime, maxRuntime, output)  //creates a video from the temporary tiles
     if (valid) return { "outP": imageOutput, "videoOutp": output }
     throw Error ("video generation failed")
   } catch (err) {
     console.error(`video generation error: ${err}`)
     return { "outP": imageOutput, "videoOutp": null }   //doesn't add the video path if not generated
   }
-
 }
 
 export default main

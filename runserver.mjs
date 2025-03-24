@@ -9,13 +9,13 @@
 
 import axios from "axios"
 import fs from "fs"
-import FormData from "form-data";
+import FormData from "form-data"
 
 //adds all of the required data to the POST request
 const formData = new FormData()
 const imgFile = fs.createReadStream("./input/dungeon.png")
 formData.append("image", imgFile)
-formData.append("tileSize", 16)
+formData.append("tileSize", 16) //should return generation failed error (too many failed iterations)
 formData.append("gridSize", 100)
 
 //call POST request to backend api

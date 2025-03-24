@@ -31,6 +31,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage })
 
+//create the input directory if it is not found
+if (!fs.existsSync("./input")) {
+  fs.mkdirSync("./input")
+}
+
 //creates empty directories if they dont exist
 function buildOutputDir() {
   //creates the entire output directory if it doesnt exist
@@ -64,8 +69,8 @@ app.post("/upload", upload.single("image"), async (req, res) => {
   let imageOutP //image output path
   let videoOutp //video output path
   try {
-    const outputs = await wfc(`./input/${req.file.filename}`, dimensions, data.tileSize, data.gridSize);  //runs the WFC algorithm
-    imageOutP = outputs.outP;       //name of the image file
+    const outputs = await wfc(`./input/${req.file.filename}`, dimensions, data.tileSize, data.gridSize)  //runs the WFC algorithm
+    imageOutP = outputs.outP       //name of the image file
     videoOutp = outputs.videoOutp   //name of the video file
   } catch (err) {
     console.log(`Error during processing: ${err}`)
