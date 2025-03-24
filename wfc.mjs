@@ -712,7 +712,7 @@ async function main(input, dimensions, tile, gridSize) {
   const maxFrames = 100                   //maximum number of frames in the video
   const maxTries = 200                   //maximum number of collapse attempts
   const startTime = Date.now()            //time at start of collapse
-  const maxRuntime = 60000                //maximum time in ms before failure
+  const maxRuntime = 60_000                //maximum time in ms before failure
   let tileSet = {}                        //key: tile key, value: tile object
   const tileSize = parseInt(tile)         //size of the tile (integer value)
   const intGridSize = parseInt(gridSize)  //size of the grid (integer value)
@@ -743,7 +743,7 @@ async function main(input, dimensions, tile, gridSize) {
     }
     tries++
     mainGrid = new Grid(intGridSize, Object.keys(tileSet), tileSet, pixelSize, tileSize, maxFrames, startTime, maxRuntime) //resets the grid
-    success = mainGrid.beginCollapse();  //starts the collapse algorithm
+    success = mainGrid.beginCollapse()  //starts the collapse algorithm
     if (success == false){
       console.log(`failed: iter ${tries}`)
     }
